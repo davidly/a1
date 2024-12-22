@@ -57,4 +57,5 @@ Notes:
   - If a HEX file is specified on the command line, it's loaded prior to the start of emulation
   - If a -l:file input file is specified, it's fed to keyboard input after the start of emulation
   - The -l:file input file can contain control characters including ^c to terminate execution once an app is complete
+  - The buid scripts are Windows-based, but all of this would work on Linux and MacOS as well. On those platforms be sure input text files have CR/LF using unix2dos.
 
