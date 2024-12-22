@@ -45,10 +45,10 @@ E000R
 640 for l = 1 to 1
 641 m = 0 : a = 2 : b = 9 : z(1) = 1
 645 gosub 400
-658 a = 2 : b = 9 : z(1) = 0 : z(2) = 1
-662 gosub 400
-668 a = 2 : b = 9 : z(2) = 0 : z(5) = 1
-672 gosub 400
+658 rem a = 2 : b = 9 : z(1) = 0 : z(2) = 1
+662 rem gosub 400
+668 rem a = 2 : b = 9 : z(2) = 0 : z(5) = 1
+672 rem gosub 400
 673 z(5) = 0
 680 next l
 687 print "final move count (6493 or 1903 expected): "; m

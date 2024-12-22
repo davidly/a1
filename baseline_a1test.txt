@@ -1,0 +1,111 @@
+Sun 12/22/2024 15:20:55.64 
+S
+
+
+elapsed milliseconds:           30,215
+Z80  cycles:            91,482,142,617
+clock rate:                  unbounded
+approx ms at 4Mhz:          22,870,535 == 0 days, 6 hours, 21 minutes, 10 seconds, 535 milliseconds
+
+hello david lee!!!$
+
+195D$
+\
+E000R
+
+E000: 4C
+>REM 271828182845904523536028747
+
+>10 H = 35 : DIM A(H) : X = 0 : N = H
+>16 A(N) = 1 : N = N - 1 : IF N > 2 THEN 16
+>20 A(2) = 2 : A(1) = 0
+>23 H = H - 1 : N = H
+>25 A(N+1) = X MOD N : X = ( 10 * A(N) ) + ( X / N ) : N = N - 1 : IF N > 0 THEN 25
+>30 PRINT X; : IF H > 9 THEN 23
+>40 PRINT "" : PRINT "DONE" : END
+>RUN
+271828182845904523536028747
+DONE
+
+>
+\
+E000R
+
+E000: 4C
+>10 PRINT "HI DAVID" : END
+>RUN
+HI DAVID
+
+>
+\
+E000R
+
+E000: 4C
+>1 GOTO 600
+>
+
+>10 W = Z(1) : IF (W=Z(2) AND W=Z(3)) OR (W=Z(4) AND W=Z(7)) OR (W=Z(5) AND W=Z(9)) THEN RETURN
+>11 W = 0 : RETURN
+>20 W = Z(2) : IF (W=Z(1) AND W=Z(3)) OR (W=Z(5) AND W=Z(8)) THEN RETURN
+>21 W = 0 : RETURN
+>30 W = Z(3) : IF (W=Z(1) AND W=Z(2)) OR (W=Z(6) AND W=Z(9)) OR (W=Z(5) AND W=Z(7)) THEN RETURN
+>31 W = 0 : RETURN
+>40 W = Z(4) : IF (W=Z(1) AND W=Z(7)) OR (W=Z(5) AND W=Z(6)) THEN RETURN
+>41 W = 0 : RETURN
+>50 W = Z(5) : IF (W=Z(2) AND W=Z(8)) OR (W=Z(1) AND W=Z(9)) OR (W=Z(3) AND W=Z(7)) OR (W=Z(4) AND W=Z(6)) THEN RETURN
+>51 W = 0 : RETURN
+>60 W = Z(6) : IF (W=Z(3) AND W=Z(9)) OR (W=Z(4) AND W=Z(5)) THEN RETURN
+>61 W = 0 : RETURN
+>70 W = Z(7) : IF (W=Z(1) AND W=Z(4)) OR (W=Z(8) AND W=Z(9)) OR (W=Z(3) AND W=Z(5)) THEN RETURN
+>71 W = 0 : RETURN
+>80 W = Z(8) : IF (W=Z(7) AND W=Z(9)) OR (W=Z(2) AND W=Z(5)) THEN RETURN
+>81 W = 0 : RETURN
+>90 W = Z(9) : IF (W=Z(3) AND W=Z(6)) OR (W=Z(7) AND W=Z(8)) OR (W=Z(1) AND W=Z(5)) THEN RETURN
+>91 W = 0 : RETURN
+>
+
+>400 D = 0 : I = 1 : V = 0 : R = 0
+>410 M = M + 1 : IF D < 4 THEN 419 : GOSUB ( 10 * P )
+>415 IF 0 = W THEN 418 : IF W = 1 THEN R = 6 : IF W = 1 THEN 434 : R = 4 : GOTO 434
+>418 IF D = 8 THEN R = 5 : IF D = 8 THEN 434
+>419 IF I = 0 THEN V = 2 : IF I = 0 THEN 421 : V = 9
+>421 P = 1
+>425 IF 0 # Z(P) THEN 460 : Z(P) = I + 1
+>428 D1 = D + 1 : S1(D1) = P : S2(D1) = V : S4(D1) = A : S8(D1) = B : S6(D1) = I
+>430 I = NOT I : D = D + 1 : GOTO 410
+>434 D1 = D : D = D - 1 : I = S6(D1) : P = S1(D1) : V = S2(D1) : A = S4(D1) : B = S8(D1) : Z(P) = 0
+>438 IF I = 0 THEN 450 : IF R = 4 THEN 490 : IF R < V THEN V = R : IF V < B THEN B = V
+>442 IF B <= A THEN 480 : GOTO 460
+>450 IF R = 6 THEN 490 : IF R > V THEN V = R : IF V > A THEN A = V : IF A >= B THEN 480
+>460 P = P + 1 : IF P < 10 THEN 425
+>480 R = V
+>490 IF D = 0 THEN RETURN : GOTO 434
+>
+
+>600 REM APPLE 1 BASIC VERSION OF APP TO PROVE YOU CAN'T WIN AT TIC-TAC-TOE
+>603 DIM Z(9), S1(10), S2(10), S4(10), S8(10), S6(10)
+>608 M = 0
+>610 FOR I = 1 TO 9
+>620 Z(I) = 0 : NEXT I
+>640 FOR L = 1 TO 1
+>641 M = 0 : A = 2 : B = 9 : Z(1) = 1
+>645 GOSUB 400
+>658 REM A = 2 : B = 9 : Z(1) = 0 : Z(2) = 1
+>662 REM GOSUB 400
+>668 REM A = 2 : B = 9 : Z(2) = 0 : Z(5) = 1
+>672 REM GOSUB 400
+>673 Z(5) = 0
+>680 NEXT L
+>687 PRINT "FINAL MOVE COUNT (6493 OR 1903 EXPECTED): "; M
+>688 PRINT "ITERATIONS: "; L - 1
+>689 PRINT "$"
+>699 END
+>
+
+>RUN
+FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903
+ITERATIONS: 1
+$
+
+>
+Sun 12/22/2024 15:23:11.92 

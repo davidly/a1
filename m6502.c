@@ -37,6 +37,8 @@ void * getmem( address ) uint16_t address;
 static void push( x ) uint8_t x; { setbyte( 0x0100 + cpu.sp, x ); cpu.sp--; }
 static uint8_t pop() { cpu.sp++; return getbyte( 0x0100 + cpu.sp ); }
 
+#define set_nz( x ) cpu.fNegative = ( 0 != ( (x) & 0x80 ) ), cpu.fZero = !(x)
+
 void power_on()
 {
     cpu.pc = getword( 0xfffc );
@@ -78,12 +80,6 @@ static uint8_t ins_len_6502[ 256 ] =
     /*f0*/ 2, 2, 0, 0, 0, 2, 2, 0,
     /*f8*/ 1, 3, 0, 0, 0, 3, 3, 1,
 };
-
-void set_nz( val ) uint8_t val;
-{
-     cpu.fNegative = ( 0 != ( val & 0x80 ) );
-     cpu.fZero = ( 0 == val );
-}
 
 uint8_t op_rotate( rotate, val ) uint8_t rotate; uint8_t val;
 {
@@ -273,13 +269,14 @@ char * render_flags()
 
 void emulate()
 {
-    uint8_t op, lo, val, rotate, tostore;
+    uint8_t op, lo, val;
     uint16_t returnAddress, address;
-    uint16_t offset;
     bool branch;
 
     do
     {
+        _again:
+
         if ( 0 != g_State )
         {
             if ( g_State & stateEndEmulation )
@@ -323,10 +320,7 @@ void emulate()
                 if ( 1 == lo )
                 {
                     if ( op & 0x10 )                                    
-                    {
-                        address = getword( getbyte( cpu.pc + 1 ) );
-                        val = getbyte( (uint16_t) cpu.y + address );
-                    }
+                        val = getbyte( (uint16_t) cpu.y + getword( getbyte( cpu.pc + 1 ) ) );
                     else                                                
                         val = getbyte( getword( 0xff & ( getbyte( cpu.pc + 1  ) + cpu.x ) ) );  
                 }
@@ -340,10 +334,7 @@ void emulate()
                 else if ( 9 == lo )
                 {
                     if ( op & 0x10 )                                    
-                    {
-                        address = getword( cpu.pc + 1 );
-                        val = getbyte( address + cpu.y );
-                    }
+                        val = getbyte( getword( cpu.pc + 1 ) + cpu.y );
                     else                                                
                         val = getbyte( cpu.pc + 1 );
                 }
@@ -379,8 +370,7 @@ void emulate()
                 else
                     m_hard_exit("mos6502 unsupported rotate instruction %02x\n", op );
         
-                rotate = op >> 5;
-                setbyte( address, op_rotate( rotate, getbyte( address ) ) );
+                setbyte( address, op_rotate( op >> 5, getbyte( address ) ) );
                 break;
             }
             case 0x08: { op_php(); break; } 
@@ -401,11 +391,8 @@ void emulate()
         
                 if ( branch )
                 {
-                    /* casting doesn't sign-extend on Aztec C, so do it manually */
-                    offset = (uint16_t) getbyte( cpu.pc + 1 );
-                    offset = sign_extend( offset, 7 );
-                    offset += 2;
-                    cpu.pc += offset;
+                    /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
+                    cpu.pc += ( 2 + sign_extend( getbyte( cpu.pc + 1 ), 7 ) );
                     continue;
                 }
                 break;
@@ -448,7 +435,6 @@ void emulate()
             case 0x81: case 0x84: case 0x85: case 0x86: case 0x8c: case 0x8d: case 0x8e: 
             case 0x91: case 0x94: case 0x95: case 0x96: case 0x99: case 0x9d:
             {
-                tostore = ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y;
                 if ( 0x81 == op )                              
                     address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) );   
                 else if ( 0x91 == op )                         
@@ -471,7 +457,7 @@ void emulate()
                 else
                     m_hard_exit( "mos6502 unsupported store instruction %02x\n", op );
 
-                setbyte( address, tostore );
+                setbyte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
                 
                 if ( 0xd012 == address )   
                     m_store( address );
@@ -539,13 +525,15 @@ void emulate()
         
                 if ( op & 0x10 )
                     address += cpu.x;
-        
+
+                val = getbyte( address );
                 if ( op >= 0xe6 )
-                    setbyte( address, getbyte( address ) + 1 );
+                    val++;
                 else
-                    setbyte( address, getbyte( address ) - 1 );
-        
-                set_nz( getbyte( address ) );
+                    val--;
+
+                setbyte( address, val );
+                set_nz( val );
                 break;
             }
             case 0xc8: { cpu.y++; set_nz( cpu.y ); break; } 
@@ -563,6 +551,7 @@ void emulate()
         }
 
         cpu.pc += ins_len_6502[ op ];
+        goto _again; /* old compilers generate code to check if true is true */
     } while( true );
 
 _all_done:
