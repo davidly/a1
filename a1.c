@@ -26,7 +26,7 @@ static void usage( err ) char * err;
 {
     if ( err )
         printf( "error: %s\n", err );
-    printf( "Apple 1: emulates an CP/M 2.2\n" );
+    printf( "Apple 1: emulates a 6502 Apple 1" );
     printf( "usage: a1 <arguments> [hexfile>]\n" );
     printf( "  arguments:\n" );
     printf( "   -a       address at which pc is set, e.g. /a:0x1000\n" );
