@@ -22,7 +22,7 @@ Files:
    - hello.s      Assembler hello world app
    - tttstdin.bas BASIC app that proves you can't win at tic-tac-toe if the opponent is competent
 
-usage:
+Usage:
 
     Apple 1: emulates a 6502 Apple 1
     usage: a1 <arguments> [hexfile>]
