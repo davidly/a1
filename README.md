@@ -47,7 +47,7 @@ The CP/M C compilers can be found here: [CP/M Compilers](https://github.com/davi
 [NTVCM](https://github.com/davidly/cpm_compilers) is an 8080/Z80 CP/M 2.2 emulator that can be used to both compile and run a1.
 
 Notes:
-  - Performance on physical CP/M machines isn't great. A1 built with Aztec C is 244x slower than a physical 1Mhz 6502. A1 built with the HI-TECH compiler is 192x slower and requires a Z80.
+  - Performance on physical CP/M machines isn't great. When run on a 4Mhz Z80, A1 built with Aztec C is 244x slower than a physical 1Mhz 6502. A1 built with the HI-TECH compiler is 192x slower and requires a Z80. That said, performnce on modern hardware is great.
   - The Aztec Z80 variant compiler CZ.COM produces slower code than the 8080 CC.COM variant and should be avoided.
   - CP/M machines have at most 64k of RAM, so the Apple 1 machine has less than that:
       - 16K of RAM starting at address 0
