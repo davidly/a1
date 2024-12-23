@@ -5,7 +5,6 @@
 
 #include "m6502.h"
 
-uint8_t lo_memory[ 0x4000 ]; /* 4k/8k is generally plenty, but 6502 functional tests require 16k */
 struct MOS_6502 cpu;
 
 static uint32_t g_State = 0;
@@ -16,22 +15,37 @@ static uint32_t g_State = 0;
 void end_emulation() { g_State |= stateEndEmulation; }
 void soft_reset() { g_State |= stateSoftReset; }
 
+/*
+    The Apple 1 shipped with 4k of RAM, and that's generally plenty.
+    Allocate 32k, which runs most apps.
+    The 6502 functional tests require 16k.
+    Apps built with cc65 or Aztec C read and write to address 0x7fff.
+    Aztec C doesn't support 32k arrays, so break up RAM into two arrays.
+*/
+
+uint8_t m_0000[ 0x4000 ];
+uint8_t m_4000[ 0x4000 ];
+
 void * getmem( address ) uint16_t address;
 {
-    if ( address < _countof( lo_memory ) )
-        return lo_memory + address;
+    if ( address < _countof( m_0000 ) ) /* for assembly apps, putting this check first is faster */
+        return m_0000 + address;
 
-    if ( address >= 0xe000 && address < 0xf000 )
-        return m_e000 + ( address - 0xe000 );
+    if ( address >= 0xe000 && address < 0xf000 ) /* woz BASIC. for BASIC apps, putting this check first is faster */
+        return m_e000 - 0xe000 + address;
 
-    if ( address >= 0xff00 )
-        return m_ff00 + ( address - 0xff00 );
+    if ( address >= 0xff00 ) /* the woz monitor */
+        return m_ff00 - 0xff00 + address;
 
-    if ( address >= 0xd000 && address < 0xd020 )
-        return m_d000 + ( address - 0xd000 );
+    if ( address >= 0xd000 && address < 0xd020 ) /* memory-mapped I/O */
+        return m_d000 - 0xd000 + address;
 
-    m_hard_exit( "invalid reference to address %04x", address );
-    return 0;
+    if ( address < 0x8000 ) /* this rarely happens */
+        return m_4000 - 0x4000 + address;
+
+    printf( "invalid memory access: %04x\n", address );
+    exit( 1 );
+    return 0; /* avoid compiler warning */
 }
 
 static void push( x ) uint8_t x; { setbyte( 0x0100 + cpu.sp, x ); cpu.sp--; }
@@ -253,6 +267,7 @@ void op_php()
     push( cpu.pf );
 }
 
+#ifndef NDEBUG
 static char ac_flags[ 7 ];
 char * render_flags()
 {
@@ -266,6 +281,7 @@ char * render_flags()
 
     return ac_flags;
 }
+#endif
 
 void emulate()
 {
@@ -275,7 +291,7 @@ void emulate()
 
     do
     {
-        _again:
+        _top_of_loop:
 
         if ( 0 != g_State )
         {
@@ -293,9 +309,10 @@ void emulate()
         }
 
         op = getbyte( cpu.pc );
-/*
+
+#ifndef NDEBUG
         printf( "pc %04x, op %02x, a %02x, x %02x, y %02x, sp %02x, %s\n", cpu.pc, op, cpu.a, cpu.x, cpu.y, cpu.sp, render_flags() ); 
-*/
+#endif
 
         switch( op )
         {
@@ -374,7 +391,7 @@ void emulate()
                 break;
             }
             case 0x08: { op_php(); break; } 
-            case 0x0f: { op = m_hook(); goto _op_rts; } 
+            case OP_HOOK: { op = m_hook(); goto _op_rts; } 
             case 0x10: case 0x30: case 0x50: case 0x70: case 0x90: case 0xb0: case 0xd0: case 0xf0: 
             {
                 if ( op <= 0x30 )
@@ -392,7 +409,7 @@ void emulate()
                 if ( branch )
                 {
                     /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
-                    cpu.pc += ( 2 + sign_extend( getbyte( cpu.pc + 1 ), 7 ) );
+                    cpu.pc += ( 2 + sign_extend( (uint16_t) getbyte( cpu.pc + 1 ), 7 ) );
                     continue;
                 }
                 break;
@@ -551,7 +568,7 @@ void emulate()
         }
 
         cpu.pc += ins_len_6502[ op ];
-        goto _again; /* old compilers generate code to check if true is true */
+        goto _top_of_loop; /* old compilers generate code to check if while( true ) is in fact true */
     } while( true );
 
 _all_done:

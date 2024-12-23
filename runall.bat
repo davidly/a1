@@ -1,19 +1,39 @@
 @echo off
 setlocal
 
-set outputfile=a1test.txt
+set outputfile=test_a1.txt
 echo %date% %time% >%outputfile%
 
-ntvcm -p .\a1 -a:400 -h 6502fun.hex >>%outputfile%
+echo tttaztec
+echo tttaztec >>%outputfile%
+ntvcm -p a1 -x -a:0x1030 tttaztec.hex >>%outputfile%
 
+echo tttcc65
+echo tttcc65 >>%outputfile%
+ntvcm -p a1 -x tttcc651.hex >>%outputfile%
+
+echo t1 assembly
+echo t1 assembly >>%outputfile%
+ntvcm -p a1 -x t1.hex >>%outputfile%
+
+echo 6502 functional test
+echo 6502 functional tests >>%outputfile%
+ntvcm .\a1 -a:400 -h 6502fun.hex >>%outputfile%
+
+echo hello world
+echo hello world >>%outputfile%
 ntvcm a1 -x hello.hex >>%outputfile%
 
-ntvcm a1 -x t1.hex >>%outputfile%
-
+echo digits of e
+echo digits of e >>%outputfile%
 ntvcm a1 -l:e.bas >>%outputfile%
 
+echo BASIC hello world
+echo BASIC hello world >>%outputfile%
 ntvcm a1 -l:hello.bas >>%outputfile%
 
+echo BASIC tic-tac-toe first move
+echo BASIC tic-tac-toe first move >>%outputfile%
 ntvcm a1 -l:ttt1st.bas >>%outputfile%
 
 echo %date% %time% >>%outputfile%

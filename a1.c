@@ -347,19 +347,12 @@ uint8_t m_hook()
     if ( 0xff1f == address )
     {
         printf( "\n" );
-        fflush( stdout );
         end_emulation();
     }
     else if ( 0xffdc == address )
-    {
         printf( "%02x", cpu.a );
-        fflush( stdout );
-    }
     else if ( 0xffe5 == address )
-    {
         printf( "%x", 0xf & cpu.a );
-        fflush( stdout );
-    }
     else if ( 0xffef == address )
     {
         c = cpu.a;
@@ -367,10 +360,10 @@ uint8_t m_hook()
         {
             c = (char) toupper( c );
             printf( "%c", c );
-            fflush( stdout );
         }
     }
 
+    fflush( stdout );
     return OP_RTS;
 }
 
@@ -754,7 +747,11 @@ int main( argc, argv ) int argc; char * argv[];
             {
                 if ( ':' == parg[2] )
                 {
-                    g_startAddress = hextoui( parg + 3 );
+                    parg += 3;
+                    if ( '0' == parg[0] && ( 'X' == parg[1] || 'x' == parg[1] ) )
+                        parg += 2;
+
+                    g_startAddress = hextoui( parg );
                     g_fStartAddressSpecified = true;
                 }
                 else
