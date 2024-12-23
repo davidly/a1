@@ -16,9 +16,8 @@ E000R
 415 if not i then v = 2 : if not i then 420 : v = 9
 420 p = 1
 425 if z(p) then 460 : z(p) = i + 1
-428 d1 = d + 1 : s1(d1) = p : s2(d1) = v : s3(d1) = a : s4(d1) = b
-430 i = not i : d = d + 1 : goto 400
-434 i = not i : d1 = d : d = d - 1 : p = s1(d1) : v = s2(d1) : a = s3(d1) : b = s4(d1) : z(p) = 0
+428 d = d + 1 : s1(d) = p : s2(d) = v : s3(d) = a : s4(d) = b : i = not i : goto 400
+434 i = not i : p = s1(d) : v = s2(d) : a = s3(d) : b = s4(d) : z(p) = 0 : d = d - 1
 438 if not i then 450 : if r = 4 then 490 : if r < v then v = r : if v < b then b = v
 442 if b <= a then 480 : goto 460
 450 if r = 6 then 490 : if r > v then v = r : if v > a then a = v : if a >= b then 480
