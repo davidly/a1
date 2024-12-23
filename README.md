@@ -21,6 +21,7 @@ Files:
    - hello.hex    Assembler hello world app built from hello.s
    - hello.s      Assembler hello world app
    - tttstdin.bas BASIC app that proves you can't win at tic-tac-toe if the opponent is competent
+   - ttt1st.bas   like tttstdin.bas but only checks first move, not all 3 unique first moves
 
 Usage:
 
