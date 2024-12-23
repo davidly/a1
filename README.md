@@ -51,12 +51,12 @@ Notes:
   - Performance on physical CP/M machines isn't great. When run on a 4Mhz Z80, A1 built with Aztec C is 231x slower than a physical 1Mhz 6502. A1 built with the HI-TECH compiler is 180x slower and requires a Z80. That said, performnce on modern hardware is great.
   - The Aztec Z80 variant compiler CZ.COM produces slower code than the 8080 CC.COM variant and should be avoided.
   - CP/M machines have at most 64k of RAM, so the Apple 1 machine has less than that:
-      - 16K of RAM starting at address 0
+      - 32K of RAM starting at address 0
       - 32 bytes for memory-mapped I/O to the keyboard and display at address 0xd000
       - 4k Woz BASIC at address 0xe000
       - 256 bytes of Woz Monitor at address 0xff00
   - If a HEX file is specified on the command line, it's loaded prior to the start of emulation
   - If a -l:file input file is specified, it's fed to keyboard input after the start of emulation
   - The -l:file input file can contain control characters including ^c to terminate execution once an app is complete
-  - The buid scripts are Windows-based, but all of this would work on Linux and MacOS as well. On those platforms be sure input text files have CR/LF using unix2dos.
+  - The buid scripts are Windows-based, but all of this works on Linux and MacOS as well. On those platforms be sure input text files have CR/LF using unix2dos.
 
