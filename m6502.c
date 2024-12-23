@@ -51,7 +51,7 @@ void * getmem( address ) uint16_t address;
 static void push( x ) uint8_t x; { setbyte( 0x0100 + cpu.sp, x ); cpu.sp--; }
 static uint8_t pop() { cpu.sp++; return getbyte( 0x0100 + cpu.sp ); }
 
-#define set_nz( x ) cpu.fNegative = ( 0 != ( (x) & 0x80 ) ), cpu.fZero = !(x)
+#define set_nz( x ) cpu.fNegative = ( 0 != ( ( x ) & 0x80 ) ), cpu.fZero = !( x )
 
 void power_on()
 {
@@ -117,14 +117,14 @@ uint8_t op_rotate( rotate, val ) uint8_t rotate; uint8_t val;
     }
     else if ( 2 == rotate )    
     {
-        cpu.fCarry = ( 0 != ( 1 & val ) );
+        cpu.fCarry = ( 1 & val );
         val >>= 1;
         val &= 0x7f;
     }
     else                       
     {
         oldCarry = cpu.fCarry;
-        cpu.fCarry = ( 0 != ( 1 & val ) );
+        cpu.fCarry = ( val & 1 );
         val >>= 1;
         if ( oldCarry )
             val |= 0x80;
@@ -189,7 +189,7 @@ void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
     }
     else
     {
-        result = ad + rd + ( cpu.fCarry ? 1 : 0 );
+        result = ad + rd + cpu.fCarry;
         if ( result > 99 )
         {
             result -= 100;
@@ -233,7 +233,7 @@ void op_math( math, rhs ) uint8_t math; uint8_t rhs;
         cpu.a ^= rhs;
     else if ( 3 == math )
     {
-        res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) ( cpu.fCarry ? 1 : 0 );
+        res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
         result = res16 & 0xff;
         cpu.fCarry = ( 0 != ( res16 & 0xff00 ) );
         cpu.fOverflow = ( ! ( ( cpu.a ^ rhs ) & 0x80 ) ) && ( ( cpu.a ^ result ) & 0x80 );
@@ -248,10 +248,10 @@ void op_pop_pf()
     cpu.pf = pop();
     cpu.fNegative = ( 0 != ( cpu.pf & 0x80 ) );
     cpu.fOverflow = ( 0 != ( cpu.pf & 0x40 ) );
-    cpu.fDecimal = ( 0 != ( cpu.pf & 0x08 ) );
-    cpu.fInterruptDisable = ( 0 != ( cpu.pf & 0x04 ) );
-    cpu.fZero = ( 0 != ( cpu.pf & 0x02 ) );
-    cpu.fCarry = ( 0 != ( cpu.pf & 0x01 ) ); 
+    cpu.fDecimal = ( 0 != ( cpu.pf & 8 ) );
+    cpu.fInterruptDisable = ( 0 != ( cpu.pf & 4 ) );
+    cpu.fZero = ( 0 != ( cpu.pf & 2 ) );
+    cpu.fCarry = ( cpu.pf & 1 ); 
 }
 
 void op_php()
@@ -260,10 +260,10 @@ void op_php()
     if ( cpu.fNegative ) cpu.pf |= 0x80;
     if ( cpu.fOverflow ) cpu.pf |= 0x40;
     cpu.pf |= 0x10;
-    if ( cpu.fDecimal ) cpu.pf |= 0x08;
-    if ( cpu.fInterruptDisable ) cpu.pf |= 0x04;
-    if ( cpu.fZero ) cpu.pf |= 0x02;
-    if ( cpu.fCarry ) cpu.pf |= 0x01;
+    if ( cpu.fDecimal ) cpu.pf |= 8;
+    if ( cpu.fInterruptDisable ) cpu.pf |= 4;
+    if ( cpu.fZero ) cpu.pf |= 2;
+    if ( cpu.fCarry ) cpu.pf |= 1;
     push( cpu.pf );
 }
 
@@ -339,7 +339,7 @@ void emulate()
                     if ( op & 0x10 )                                    
                         val = getbyte( (uint16_t) cpu.y + getword( getbyte( cpu.pc + 1 ) ) );
                     else                                                
-                        val = getbyte( getword( 0xff & ( getbyte( cpu.pc + 1  ) + cpu.x ) ) );  
+                        val = getbyte( getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) ) );  
                 }
                 else if ( 5 == lo )
                 {
@@ -362,8 +362,6 @@ void emulate()
                         address += (uint16_t) cpu.x;
                     val = getbyte( address );
                 }
-                else
-                    m_hard_exit( "mos6502 unsupported comparison instruction %02x\n", op );
         
                 op_math( ( op >> 5 ), val );
                 break;
@@ -384,8 +382,6 @@ void emulate()
                     if ( op & 0x10 )
                         address += (uint16_t) cpu.x;               
                 }
-                else
-                    m_hard_exit("mos6502 unsupported rotate instruction %02x\n", op );
         
                 setbyte( address, op_rotate( op >> 5, getbyte( address ) ) );
                 break;
@@ -471,8 +467,6 @@ void emulate()
                     address = getword( cpu.pc + 1 );                 
                 else if ( 0x9d == op )                         
                     address = getword( cpu.pc + 1 ) + cpu.x;             
-                else
-                    m_hard_exit( "mos6502 unsupported store instruction %02x\n", op );
 
                 setbyte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
                 
@@ -510,8 +504,6 @@ void emulate()
                     address = getword( cpu.pc + 1 ) + cpu.x;             
                 else if ( 0xb9 == op || 0xbe == op )               
                     address = getword( cpu.pc + 1 ) + cpu.y;             
-                else
-                    m_hard_exit( "mos6502 unsupported load instruction opcode %02x\n", op );
                 
                 if ( address >= 0xd010 && address <= 0xd012 ) 
                     setbyte( address, m_load( address ) );
@@ -564,7 +556,7 @@ void emulate()
             case 0xec: { op_cmp( cpu.x, getbyte( getword( cpu.pc + 1 ) ) ); break; } 
             case 0xf8: { cpu.fDecimal = true; break; } 
             case 0xff: { m_halt(); goto _all_done; } 
-            default: m_hard_exit( "mos6502 unimplemented instruction opcode %02x\n", op );
+            default: m_hard_exit( "mos6502 unknown opcode %02x\n", op );
         }
 
         cpu.pc += ins_len_6502[ op ];
