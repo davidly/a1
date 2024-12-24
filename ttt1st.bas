@@ -1,15 +1,14 @@
 E000R
 
-20 m = m + 1 : if d < 4 then 24 : gosub ( p + 50 ) : if not w then 22 : r = 4 : if w = 1 then r = 6 : goto 28
+20 m = m + 1 : if d < 4 then 24 : gosub p + 50 : if not w then 22 : r = 4 : if w = 1 then r = 6 : goto 28
 22 if d = 8 then r = 5 : if d = 8 then 28
 24 if not i then v = 2 : if i then v = 9 : p = 1
 26 if z(p) then 34 : z(p) = i + 1 : d = d + 1 : s1(d) = p : s2(d) = v : s3(d) = a : s4(d) = b : i = not i : goto 20
 28 i = not i : p = s1(d) : v = s2(d) : a = s3(d) : b = s4(d) : z(p) = 0 : d = d - 1
-30 if not i then 32 : if r = 4 then 38 : if r < v then v = r : if v < b then b = v : if b <= a then 36 : goto 34
-32 if r = 6 then 38 : if r > v then v = r : if v > a then a = v : if a >= b then 36
-34 p = p + 1 : if p < 10 then 26
-36 r = v
-38 if not d then return : goto 28
+30 if i then 32 : if r = 6 or r >= b then 36 : if r > v then v = r : if v > a then a = v : goto 34
+32 if r = 4 or r <= a then 36 : if r < v then v = r : if v < b then b = v
+34 p = p + 1 : if p < 10 then 26 : r = v
+36 if not d then return : goto 28
 
 51 w = z(1) : if (w#z(2) or w#z(3)) and (w#z(4) or w#z(7)) and (w#z(5) or w#z(9)) then w = 0 : return
 52 w = z(2) : if (w#z(1) or w#z(3)) and (w#z(5) or w#z(8)) then w = 0 : return
