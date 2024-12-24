@@ -1,15 +1,15 @@
-Mon 12/23/2024 16:49:14.21 
+Tue 12/24/2024  8:49:43.73 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            4,301
+elapsed milliseconds:            4,347
 Z80  cycles:            13,276,625,998
 clock rate:                  unbounded
 approx ms at 4Mhz:           3,319,156 == 0 days, 0 hours, 55 minutes, 19 seconds, 156 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:            1,233
+elapsed milliseconds:            1,225
 Z80  cycles:             3,650,938,176
 clock rate:                  unbounded
 approx ms at 4Mhz:             912,734 == 0 days, 0 hours, 15 minutes, 12 seconds, 734 milliseconds
@@ -17,7 +17,7 @@ t1 assembly
 
 195D$
 
-elapsed milliseconds:              413
+elapsed milliseconds:              426
 Z80  cycles:             1,293,290,800
 clock rate:                  unbounded
 approx ms at 4Mhz:             323,322 == 0 days, 0 hours, 5 minutes, 23 seconds, 322 milliseconds
@@ -63,16 +63,15 @@ E000R
 E000: 4C
 >
 
->20 M = M + 1 : IF D < 4 THEN 24 : GOSUB ( P + 50 ) : IF NOT W THEN 22 : R = 4 : IF W = 1 THEN R = 6 : GOTO 28
+>20 M = M + 1 : IF D < 4 THEN 24 : GOSUB P + 50 : IF NOT W THEN 22 : R = 4 : IF W = 1 THEN R = 6 : GOTO 28
 >22 IF D = 8 THEN R = 5 : IF D = 8 THEN 28
 >24 IF NOT I THEN V = 2 : IF I THEN V = 9 : P = 1
 >26 IF Z(P) THEN 34 : Z(P) = I + 1 : D = D + 1 : S1(D) = P : S2(D) = V : S3(D) = A : S4(D) = B : I = NOT I : GOTO 20
 >28 I = NOT I : P = S1(D) : V = S2(D) : A = S3(D) : B = S4(D) : Z(P) = 0 : D = D - 1
->30 IF NOT I THEN 32 : IF R = 4 THEN 38 : IF R < V THEN V = R : IF V < B THEN B = V : IF B <= A THEN 36 : GOTO 34
->32 IF R = 6 THEN 38 : IF R > V THEN V = R : IF V > A THEN A = V : IF A >= B THEN 36
->34 P = P + 1 : IF P < 10 THEN 26
->36 R = V
->38 IF NOT D THEN RETURN : GOTO 28
+>30 IF I THEN 32 : IF R = 6 OR R >= B THEN 36 : IF R > V THEN V = R : IF V > A THEN A = V : GOTO 34
+>32 IF R = 4 OR R <= A THEN 36 : IF R < V THEN V = R : IF V < B THEN B = V
+>34 P = P + 1 : IF P < 10 THEN 26 : R = V
+>36 IF NOT D THEN RETURN : GOTO 28
 >
 
 >51 W = Z(1) : IF (W#Z(2) OR W#Z(3)) AND (W#Z(4) OR W#Z(7)) AND (W#Z(5) OR W#Z(9)) THEN W = 0 : RETURN
@@ -106,4 +105,4 @@ E000: 4C
 FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
-Mon 12/23/2024 16:51:00.82 
+Tue 12/24/2024  8:51:31.50 
