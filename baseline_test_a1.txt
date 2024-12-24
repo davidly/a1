@@ -1,26 +1,26 @@
-Mon 12/23/2024  7:26:32.36 
+Mon 12/23/2024 16:49:14.21 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            4,161
-Z80  cycles:            13,081,665,815
+elapsed milliseconds:            4,301
+Z80  cycles:            13,276,625,998
 clock rate:                  unbounded
-approx ms at 4Mhz:           3,270,416 == 0 days, 0 hours, 54 minutes, 30 seconds, 416 milliseconds
+approx ms at 4Mhz:           3,319,156 == 0 days, 0 hours, 55 minutes, 19 seconds, 156 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:            1,150
-Z80  cycles:             3,547,768,727
+elapsed milliseconds:            1,233
+Z80  cycles:             3,650,938,176
 clock rate:                  unbounded
-approx ms at 4Mhz:             886,942 == 0 days, 0 hours, 14 minutes, 46 seconds, 942 milliseconds
+approx ms at 4Mhz:             912,734 == 0 days, 0 hours, 15 minutes, 12 seconds, 734 milliseconds
 t1 assembly 
 
 195D$
 
-elapsed milliseconds:              430
-Z80  cycles:             1,294,945,862
+elapsed milliseconds:              413
+Z80  cycles:             1,293,290,800
 clock rate:                  unbounded
-approx ms at 4Mhz:             323,736 == 0 days, 0 hours, 5 minutes, 23 seconds, 736 milliseconds
+approx ms at 4Mhz:             323,322 == 0 days, 0 hours, 5 minutes, 23 seconds, 322 milliseconds
 6502 functional tests 
 S
 
@@ -61,71 +61,49 @@ BASIC tic-tac-toe first move
 E000R
 
 E000: 4C
->1 GOTO 600
 >
 
->10 W = Z(1) : IF (W=Z(2) AND W=Z(3)) OR (W=Z(4) AND W=Z(7)) OR (W=Z(5) AND W=Z(9)) THEN RETURN
->11 W = 0 : RETURN
->20 W = Z(2) : IF (W=Z(1) AND W=Z(3)) OR (W=Z(5) AND W=Z(8)) THEN RETURN
->21 W = 0 : RETURN
->30 W = Z(3) : IF (W=Z(1) AND W=Z(2)) OR (W=Z(6) AND W=Z(9)) OR (W=Z(5) AND W=Z(7)) THEN RETURN
->31 W = 0 : RETURN
->40 W = Z(4) : IF (W=Z(1) AND W=Z(7)) OR (W=Z(5) AND W=Z(6)) THEN RETURN
->41 W = 0 : RETURN
->50 W = Z(5) : IF (W=Z(2) AND W=Z(8)) OR (W=Z(1) AND W=Z(9)) OR (W=Z(3) AND W=Z(7)) OR (W=Z(4) AND W=Z(6)) THEN RETURN
->51 W = 0 : RETURN
->60 W = Z(6) : IF (W=Z(3) AND W=Z(9)) OR (W=Z(4) AND W=Z(5)) THEN RETURN
->61 W = 0 : RETURN
->70 W = Z(7) : IF (W=Z(1) AND W=Z(4)) OR (W=Z(8) AND W=Z(9)) OR (W=Z(3) AND W=Z(5)) THEN RETURN
->71 W = 0 : RETURN
->80 W = Z(8) : IF (W=Z(7) AND W=Z(9)) OR (W=Z(2) AND W=Z(5)) THEN RETURN
->81 W = 0 : RETURN
->90 W = Z(9) : IF (W=Z(3) AND W=Z(6)) OR (W=Z(7) AND W=Z(8)) OR (W=Z(1) AND W=Z(5)) THEN RETURN
->91 W = 0 : RETURN
+>20 M = M + 1 : IF D < 4 THEN 24 : GOSUB ( P + 50 ) : IF NOT W THEN 22 : R = 4 : IF W = 1 THEN R = 6 : GOTO 28
+>22 IF D = 8 THEN R = 5 : IF D = 8 THEN 28
+>24 IF NOT I THEN V = 2 : IF I THEN V = 9 : P = 1
+>26 IF Z(P) THEN 34 : Z(P) = I + 1 : D = D + 1 : S1(D) = P : S2(D) = V : S3(D) = A : S4(D) = B : I = NOT I : GOTO 20
+>28 I = NOT I : P = S1(D) : V = S2(D) : A = S3(D) : B = S4(D) : Z(P) = 0 : D = D - 1
+>30 IF NOT I THEN 32 : IF R = 4 THEN 38 : IF R < V THEN V = R : IF V < B THEN B = V : IF B <= A THEN 36 : GOTO 34
+>32 IF R = 6 THEN 38 : IF R > V THEN V = R : IF V > A THEN A = V : IF A >= B THEN 36
+>34 P = P + 1 : IF P < 10 THEN 26
+>36 R = V
+>38 IF NOT D THEN RETURN : GOTO 28
 >
 
->400 D = 0 : I = 1 : V = 0 : R = 0
->410 M = M + 1 : IF D < 4 THEN 419 : GOSUB ( 10 * P )
->415 IF 0 = W THEN 418 : IF W = 1 THEN R = 6 : IF W = 1 THEN 434 : R = 4 : GOTO 434
->418 IF D = 8 THEN R = 5 : IF D = 8 THEN 434
->419 IF I = 0 THEN V = 2 : IF I = 0 THEN 421 : V = 9
->421 P = 1
->425 IF 0 # Z(P) THEN 460 : Z(P) = I + 1
->428 D1 = D + 1 : S1(D1) = P : S2(D1) = V : S4(D1) = A : S8(D1) = B : S6(D1) = I
->430 I = NOT I : D = D + 1 : GOTO 410
->434 D1 = D : D = D - 1 : I = S6(D1) : P = S1(D1) : V = S2(D1) : A = S4(D1) : B = S8(D1) : Z(P) = 0
->438 IF I = 0 THEN 450 : IF R = 4 THEN 490 : IF R < V THEN V = R : IF V < B THEN B = V
->442 IF B <= A THEN 480 : GOTO 460
->450 IF R = 6 THEN 490 : IF R > V THEN V = R : IF V > A THEN A = V : IF A >= B THEN 480
->460 P = P + 1 : IF P < 10 THEN 425
->480 R = V
->490 IF D = 0 THEN RETURN : GOTO 434
+>51 W = Z(1) : IF (W#Z(2) OR W#Z(3)) AND (W#Z(4) OR W#Z(7)) AND (W#Z(5) OR W#Z(9)) THEN W = 0 : RETURN
+>52 W = Z(2) : IF (W#Z(1) OR W#Z(3)) AND (W#Z(5) OR W#Z(8)) THEN W = 0 : RETURN
+>53 W = Z(3) : IF (W#Z(1) OR W#Z(2)) AND (W#Z(6) OR W#Z(9)) AND (W#Z(5) OR W#Z(7)) THEN W = 0 : RETURN
+>54 W = Z(4) : IF (W#Z(1) OR W#Z(7)) AND (W#Z(5) OR W#Z(6)) THEN W = 0 : RETURN
+>55 W = Z(5) : IF (W#Z(2) OR W#Z(8)) AND (W#Z(1) OR W#Z(9)) AND (W#Z(3) OR W#Z(7)) AND (W#Z(4) OR W#Z(6)) THEN W = 0 : RETURN
+>56 W = Z(6) : IF (W#Z(3) OR W#Z(9)) AND (W#Z(4) OR W#Z(5)) THEN W = 0 : RETURN
+>57 W = Z(7) : IF (W#Z(1) OR W#Z(4)) AND (W#Z(8) OR W#Z(9)) AND (W#Z(3) OR W#Z(5)) THEN W = 0 : RETURN
+>58 W = Z(8) : IF (W#Z(7) OR W#Z(9)) AND (W#Z(2) OR W#Z(5)) THEN W = 0 : RETURN
+>59 W = Z(9) : IF (W#Z(3) OR W#Z(6)) AND (W#Z(7) OR W#Z(8)) AND (W#Z(1) OR W#Z(5)) THEN W = 0 : RETURN
 >
 
->600 REM APPLE 1 BASIC VERSION OF APP TO PROVE YOU CAN'T WIN AT TIC-TAC-TOE
->603 DIM Z(9), S1(10), S2(10), S4(10), S8(10), S6(10)
->608 M = 0
->610 FOR I = 1 TO 9
->620 Z(I) = 0 : NEXT I
->640 FOR L = 1 TO 1
->641 M = 0 : A = 2 : B = 9 : Z(1) = 1
->645 GOSUB 400
->658 REM A = 2 : B = 9 : Z(1) = 0 : Z(2) = 1
->662 REM GOSUB 400
->668 REM A = 2 : B = 9 : Z(2) = 0 : Z(5) = 1
->672 REM GOSUB 400
->673 Z(5) = 0
->680 NEXT L
->687 PRINT "FINAL MOVE COUNT (6493 OR 1903 EXPECTED): "; M
->688 PRINT "ITERATIONS: "; L - 1
->689 PRINT "$"
->699 END
+>70 A = 2 : B = 9 : D = 0 : I = 1 : V = 0 : R = 0
+>71 GOSUB 20 : RETURN
 >
 
->RUN
-FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903
-ITERATIONS: 1
-$
+>80 REM APPLE 1 BASIC VERSION OF APP TO PROVE YOU CAN'T WIN AT TIC-TAC-TOE
+>81 DIM Z(9), S1(9), S2(9), S3(9), S4(9)
+>82 FOR I = 1 TO 9
+>83     Z(I) = 0 : NEXT I
+>85 M = 0
+>86 Z(1) = 1 : GOSUB 70 : Z(1) = 0
+>87 REM Z(2) = 1 : GOSUB 70 : Z(2) = 0
+>88 REM Z(5) = 1 : GOSUB 70 : Z(5) = 0
+>90 PRINT "FINAL MOVE COUNT (6493 OR 1903 EXPECTED): "; M; "$"
+>99 END
+>
+
+>RUN 80
+FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
-Mon 12/23/2024  7:29:02.08 
+Mon 12/23/2024 16:51:00.82 

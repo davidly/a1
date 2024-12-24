@@ -1,6 +1,6 @@
 E000R
 
-20 m = m + 1 : if d < 4 then 24 : gosub ( p + 60 ) : if not w then 22 : r = 4 : if w = 1 then r = 6 : goto 28
+20 m = m + 1 : if d < 4 then 24 : gosub ( p + 50 ) : if not w then 22 : r = 4 : if w = 1 then r = 6 : goto 28
 22 if d = 8 then r = 5 : if d = 8 then 28
 24 if not i then v = 2 : if i then v = 9 : p = 1
 26 if z(p) then 34 : z(p) = i + 1 : d = d + 1 : s1(d) = p : s2(d) = v : s3(d) = a : s4(d) = b : i = not i : goto 20
@@ -11,15 +11,15 @@ E000R
 36 r = v
 38 if not d then return : goto 28
 
-61 w = z(1) : if (w#z(2) or w#z(3)) and (w#z(4) or w#z(7)) and (w#z(5) or w#z(9)) then w = 0 : return
-62 w = z(2) : if (w#z(1) or w#z(3)) and (w#z(5) or w#z(8)) then w = 0 : return
-63 w = z(3) : if (w#z(1) or w#z(2)) and (w#z(6) or w#z(9)) and (w#z(5) or w#z(7)) then w = 0 : return
-64 w = z(4) : if (w#z(1) or w#z(7)) and (w#z(5) or w#z(6)) then w = 0 : return
-65 w = z(5) : if (w#z(2) or w#z(8)) and (w#z(1) or w#z(9)) and (w#z(3) or w#z(7)) and (w#z(4) or w#z(6)) then w = 0 : return
-66 w = z(6) : if (w#z(3) or w#z(9)) and (w#z(4) or w#z(5)) then w = 0 : return
-67 w = z(7) : if (w#z(1) or w#z(4)) and (w#z(8) or w#z(9)) and (w#z(3) or w#z(5)) then w = 0 : return
-68 w = z(8) : if (w#z(7) or w#z(9)) and (w#z(2) or w#z(5)) then w = 0 : return
-69 w = z(9) : if (w#z(3) or w#z(6)) and (w#z(7) or w#z(8)) and (w#z(1) or w#z(5)) then w = 0 : return
+51 w = z(1) : if (w#z(2) or w#z(3)) and (w#z(4) or w#z(7)) and (w#z(5) or w#z(9)) then w = 0 : return
+52 w = z(2) : if (w#z(1) or w#z(3)) and (w#z(5) or w#z(8)) then w = 0 : return
+53 w = z(3) : if (w#z(1) or w#z(2)) and (w#z(6) or w#z(9)) and (w#z(5) or w#z(7)) then w = 0 : return
+54 w = z(4) : if (w#z(1) or w#z(7)) and (w#z(5) or w#z(6)) then w = 0 : return
+55 w = z(5) : if (w#z(2) or w#z(8)) and (w#z(1) or w#z(9)) and (w#z(3) or w#z(7)) and (w#z(4) or w#z(6)) then w = 0 : return
+56 w = z(6) : if (w#z(3) or w#z(9)) and (w#z(4) or w#z(5)) then w = 0 : return
+57 w = z(7) : if (w#z(1) or w#z(4)) and (w#z(8) or w#z(9)) and (w#z(3) or w#z(5)) then w = 0 : return
+58 w = z(8) : if (w#z(7) or w#z(9)) and (w#z(2) or w#z(5)) then w = 0 : return
+59 w = z(9) : if (w#z(3) or w#z(6)) and (w#z(7) or w#z(8)) and (w#z(1) or w#z(5)) then w = 0 : return
 
 70 a = 2 : b = 9 : d = 0 : i = 1 : v = 0 : r = 0
 71 gosub 20 : return

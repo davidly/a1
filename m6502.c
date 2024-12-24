@@ -158,9 +158,9 @@ void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
     uint8_t alo, ahi, rlo, rhi, ad, rd, result;
 
     alo = cpu.a & 0xf;
-    ahi = ( cpu.a >> 4 ) & 0xf;
+    ahi = cpu.a >> 4;
     rlo = rhs & 0xf;
-    rhi = ( rhs >> 4 ) & 0xf;
+    rhi = rhs >> 4;
 
     cpu.fZero = false;
 
@@ -169,7 +169,6 @@ void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
 
     ad = ahi * 10 + alo;
     rd = rhi * 10 + rlo;
-    result;
 
     if ( 7 == math )
     {
@@ -355,7 +354,7 @@ void emulate()
                     else                                                
                         val = getbyte( cpu.pc + 1 );
                 }
-                else if ( 0xd == lo )
+                else /* if ( 0xd == lo ) */
                 {
                     address = getword( cpu.pc + 1 );                 
                     if ( op & 0x10 )                                    
@@ -376,7 +375,7 @@ void emulate()
                     if ( op & 0x10 )
                         address += (uint16_t) cpu.x;               
                 }
-                else if ( 0x0e == lo )
+                else /* if ( 0x0e == lo ) */
                 {
                     address = getword( cpu.pc + 1 );                 
                     if ( op & 0x10 )
