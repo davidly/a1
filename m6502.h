@@ -19,7 +19,7 @@ typedef uint8_t bool;
 #define sign_extend( x, bits ) ( ( (x) ^ ( (uint16_t) 1 << bits ) ) - ( ( (uint16_t) 1 ) << bits ) )
 
 /* a1.c manages these memory ranges */
-extern uint8_t m_d000[ 32 ]; /* memory-mapped keyboard and console */
+extern uint8_t m_d000[ 21 ]; /* memory-mapped keyboard and console */
 extern uint8_t m_e000[ 4096 ]; /* woz apple 1 basic */
 extern uint8_t m_ff00[ 256 ]; /* woz monitor */
 

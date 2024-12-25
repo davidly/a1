@@ -21,10 +21,15 @@ void soft_reset() { g_State |= stateSoftReset; }
     The 6502 functional tests require 16k.
     Apps built with cc65 or Aztec C read and write to address 0x7fff.
     Aztec C doesn't support 32k arrays, so break up RAM into two arrays.
+    The Altair Simulator doesn't have sufficient RAM for 32k. Turn APPLE1_32K off for that emulator.
 */
 
-uint8_t m_0000[ 0x4000 ];
-uint8_t m_4000[ 0x4000 ];
+static uint8_t m_0000[ 0x4000 ];
+
+#define APPLE1_32K
+#ifdef APPLE1_32K
+static uint8_t m_4000[ 0x4000 ];
+#endif
 
 void * getmem( address ) uint16_t address;
 {
@@ -37,11 +42,13 @@ void * getmem( address ) uint16_t address;
     if ( address >= 0xff00 ) /* the woz monitor */
         return m_ff00 - 0xff00 + address;
 
-    if ( address >= 0xd000 && address < 0xd020 ) /* memory-mapped I/O */
+    if ( address >= 0xd000 && address <= 0xd013 ) /* memory-mapped I/O */
         return m_d000 - 0xd000 + address;
 
+#ifdef APPLE1_32K
     if ( address < 0x8000 ) /* this rarely happens */
         return m_4000 - 0x4000 + address;
+#endif
 
     printf( "invalid memory access: %04x\n", address );
     exit( 1 );

@@ -1,15 +1,15 @@
-Tue 12/24/2024  8:49:43.73 
+Tue 12/24/2024 18:23:30.45 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            4,347
+elapsed milliseconds:            4,334
 Z80  cycles:            13,276,625,998
 clock rate:                  unbounded
 approx ms at 4Mhz:           3,319,156 == 0 days, 0 hours, 55 minutes, 19 seconds, 156 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:            1,225
+elapsed milliseconds:            1,220
 Z80  cycles:             3,650,938,176
 clock rate:                  unbounded
 approx ms at 4Mhz:             912,734 == 0 days, 0 hours, 15 minutes, 12 seconds, 734 milliseconds
@@ -17,7 +17,7 @@ t1 assembly
 
 195D$
 
-elapsed milliseconds:              426
+elapsed milliseconds:              423
 Z80  cycles:             1,293,290,800
 clock rate:                  unbounded
 approx ms at 4Mhz:             323,322 == 0 days, 0 hours, 5 minutes, 23 seconds, 322 milliseconds
@@ -63,40 +63,40 @@ E000R
 E000: 4C
 >
 
->20 M = M + 1 : IF D < 4 THEN 24 : GOSUB P + 50 : IF NOT W THEN 22 : R = 4 : IF W = 1 THEN R = 6 : GOTO 28
->22 IF D = 8 THEN R = 5 : IF D = 8 THEN 28
->24 IF NOT I THEN V = 2 : IF I THEN V = 9 : P = 1
->26 IF Z(P) THEN 34 : Z(P) = I + 1 : D = D + 1 : S1(D) = P : S2(D) = V : S3(D) = A : S4(D) = B : I = NOT I : GOTO 20
->28 I = NOT I : P = S1(D) : V = S2(D) : A = S3(D) : B = S4(D) : Z(P) = 0 : D = D - 1
->30 IF I THEN 32 : IF R = 6 OR R >= B THEN 36 : IF R > V THEN V = R : IF V > A THEN A = V : GOTO 34
->32 IF R = 4 OR R <= A THEN 36 : IF R < V THEN V = R : IF V < B THEN B = V
->34 P = P + 1 : IF P < 10 THEN 26 : R = V
->36 IF NOT D THEN RETURN : GOTO 28
+>20 M=M+1 : IF D<4 THEN 24 : GOSUB P+50 : IF NOT W THEN 22 : R=4 : IF W=1 THEN R=6 : GOTO 28
+>22 IF D#8 THEN 24 : R=5 : GOTO 28
+>24 V=2 : IF I THEN V=9 : P=1
+>26 IF Z(P) THEN 34 : Z(P)=I+1 : D=D+1 : S1(D)=P : S2(D)=V : S3(D)=A : S4(D)=B : I = NOT I : GOTO 20
+>28 I = NOT I : P=S1(D) : V=S2(D) : A=S3(D) : B=S4(D) : Z(P)=0 : D=D-1
+>30 IF I THEN 32 : IF R=6 OR R>=B THEN 36 : IF R>V THEN V=R : IF V>A THEN A=V : GOTO 34
+>32 IF R=4 OR R<=A THEN 36 : IF R<V THEN V=R : IF V<B THEN B=V
+>34 P=P+1 : IF P<10 THEN 26 : R=V
+>36 IF D THEN 28 : RETURN
 >
 
->51 W = Z(1) : IF (W#Z(2) OR W#Z(3)) AND (W#Z(4) OR W#Z(7)) AND (W#Z(5) OR W#Z(9)) THEN W = 0 : RETURN
->52 W = Z(2) : IF (W#Z(1) OR W#Z(3)) AND (W#Z(5) OR W#Z(8)) THEN W = 0 : RETURN
->53 W = Z(3) : IF (W#Z(1) OR W#Z(2)) AND (W#Z(6) OR W#Z(9)) AND (W#Z(5) OR W#Z(7)) THEN W = 0 : RETURN
->54 W = Z(4) : IF (W#Z(1) OR W#Z(7)) AND (W#Z(5) OR W#Z(6)) THEN W = 0 : RETURN
->55 W = Z(5) : IF (W#Z(2) OR W#Z(8)) AND (W#Z(1) OR W#Z(9)) AND (W#Z(3) OR W#Z(7)) AND (W#Z(4) OR W#Z(6)) THEN W = 0 : RETURN
->56 W = Z(6) : IF (W#Z(3) OR W#Z(9)) AND (W#Z(4) OR W#Z(5)) THEN W = 0 : RETURN
->57 W = Z(7) : IF (W#Z(1) OR W#Z(4)) AND (W#Z(8) OR W#Z(9)) AND (W#Z(3) OR W#Z(5)) THEN W = 0 : RETURN
->58 W = Z(8) : IF (W#Z(7) OR W#Z(9)) AND (W#Z(2) OR W#Z(5)) THEN W = 0 : RETURN
->59 W = Z(9) : IF (W#Z(3) OR W#Z(6)) AND (W#Z(7) OR W#Z(8)) AND (W#Z(1) OR W#Z(5)) THEN W = 0 : RETURN
+>51 W=Z(1) : IF (W#Z(2) OR W#Z(3)) AND (W#Z(4) OR W#Z(7)) AND (W#Z(5) OR W#Z(9)) THEN W=0 : RETURN
+>52 W=Z(2) : IF (W#Z(1) OR W#Z(3)) AND (W#Z(5) OR W#Z(8)) THEN W=0 : RETURN
+>53 W=Z(3) : IF (W#Z(1) OR W#Z(2)) AND (W#Z(6) OR W#Z(9)) AND (W#Z(5) OR W#Z(7)) THEN W=0 : RETURN
+>54 W=Z(4) : IF (W#Z(1) OR W#Z(7)) AND (W#Z(5) OR W#Z(6)) THEN W=0 : RETURN
+>55 W=Z(5) : IF (W#Z(2) OR W#Z(8)) AND (W#Z(1) OR W#Z(9)) AND (W#Z(3) OR W#Z(7)) AND (W#Z(4) OR W#Z(6)) THEN W=0 : RETURN
+>56 W=Z(6) : IF (W#Z(3) OR W#Z(9)) AND (W#Z(4) OR W#Z(5)) THEN W=0 : RETURN
+>57 W=Z(7) : IF (W#Z(1) OR W#Z(4)) AND (W#Z(8) OR W#Z(9)) AND (W#Z(3) OR W#Z(5)) THEN W=0 : RETURN
+>58 W=Z(8) : IF (W#Z(7) OR W#Z(9)) AND (W#Z(2) OR W#Z(5)) THEN W = 0 : RETURN
+>59 W=Z(9) : IF (W#Z(3) OR W#Z(6)) AND (W#Z(7) OR W#Z(8)) AND (W#Z(1) OR W#Z(5)) THEN W=0 : RETURN
 >
 
->70 A = 2 : B = 9 : D = 0 : I = 1 : V = 0 : R = 0
+>70 A=2 : B=9 : D=0 : I=1 : V=0 : R=0
 >71 GOSUB 20 : RETURN
 >
 
 >80 REM APPLE 1 BASIC VERSION OF APP TO PROVE YOU CAN'T WIN AT TIC-TAC-TOE
 >81 DIM Z(9), S1(9), S2(9), S3(9), S4(9)
 >82 FOR I = 1 TO 9
->83     Z(I) = 0 : NEXT I
->85 M = 0
->86 Z(1) = 1 : GOSUB 70 : Z(1) = 0
->87 REM Z(2) = 1 : GOSUB 70 : Z(2) = 0
->88 REM Z(5) = 1 : GOSUB 70 : Z(5) = 0
+>83 Z(I)=0 : NEXT I
+>85 M=0
+>86 Z(1)=1 : GOSUB 70 : Z(1)=0
+>87 REM Z(2)=1 : GOSUB 70 : Z(2)=0
+>88 REM Z(5)=1 : GOSUB 70 : Z(5)=0
 >90 PRINT "FINAL MOVE COUNT (6493 OR 1903 EXPECTED): "; M; "$"
 >99 END
 >
@@ -105,4 +105,4 @@ E000: 4C
 FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
-Tue 12/24/2024  8:51:31.50 
+Tue 12/24/2024 18:25:16.57 

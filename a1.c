@@ -20,7 +20,7 @@ static bool g_exitOnMonitor = false;
 static FILE * g_loadFile = 0;
 static char kbd_char = 0;
 static bool kbd_available = false;
-static char acLine[ 120 ];
+static char acLine[ 120 ]; /* shared buffer */
 
 static void usage( err ) char * err;
 {
@@ -46,12 +46,11 @@ static void usage( err ) char * err;
     exit( -1 );
 }
 
-uint8_t m_d000[ 32 ] = /* memory-mapped keyboard and console input/output */
+uint8_t m_d000[ 21 ] = /* memory-mapped keyboard and console input/output */
 {
     'N', 'E', 'W', 'J', 'E', 'A', 'N', 'S',
     'F', 'O', 'R', 'E', 'V', 'E', 'R', 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
+    0, 0, 0, 0, 0
 };
 
 uint8_t m_ff00[ 256 ] = /* woz monitor */
@@ -375,11 +374,10 @@ void m_hard_exit( perror, val ) char * perror; uint16_t val;
 
 void load_input_file()
 {
-    char acfilename[ 20 ];
     char * result;
     printf( "filename to read: " );
     fflush( stdout );
-    result = gets( acfilename );
+    result = gets( acLine );
     if ( result )
     {
         g_loadFile = fopen( result, "r" );
@@ -547,24 +545,26 @@ uint16_t hextoui( p ) char * p;
 
 static uint8_t read_byte( p ) char * p;
 {
-    char ac[3];
-    ac[0] = p[0];
-    ac[1] = p[1];
-    ac[2] = 0;
+    uint8_t result;
+    char save;
+    save = p[ 2 ];
+    p[2] = 0;
 
-    return (uint8_t) hextoui( ac );
+    result = (uint8_t) hextoui( p );
+    p[2] = save;
+    return result;
 }
 
 static uint16_t read_word( p ) char * p;
 {
-    char ac[5];
-    ac[0] = p[0];
-    ac[1] = p[1];
-    ac[2] = p[2];
-    ac[3] = p[3];
-    ac[4] = 0;
+    uint16_t result;
+    char save;
+    save = p[ 4 ];
+    p[4] = 0;
 
-    return hextoui( ac );
+    result = hextoui( p );
+    p[4] = save;
+    return result;
 }
 
 static bool load_intel( fp ) FILE * fp;
