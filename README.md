@@ -59,4 +59,5 @@ Notes:
   - If a -l:file input file is specified, it's fed to keyboard input after the start of emulation
   - The -l:file input file can contain control characters including ^c to terminate execution once an app is complete
   - The buid scripts are Windows-based, but all of this works on Linux and MacOS as well. On those platforms be sure input text files have CR/LF using unix2dos.
-  - Why did I do this? Now I can run Steve Wozniak BASIC apps in my 6502 Apple 1 emulator in my 8080/Z80 CP/M emulator in my 8086 DOS emulator in my Arm64 Linux emulator in my RISC-V 64 Linux emulator on any reasonably modern machine and OS.
+  - The Altair 8800 (Z80) simulator V4.0-0 doesn't have enough RAM for a 32K Apple 1. Turn off APPLE1_32K in m6502.c to run a1 in that emulator.
+  - Why did I make this? Now I can run Steve Wozniak BASIC apps in my 6502 Apple 1 emulator in my 8080/Z80 CP/M emulator in my 8086 DOS emulator in my Arm64 Linux emulator in my RISC-V 64 Linux emulator on any reasonably modern machine and OS.
