@@ -11,6 +11,7 @@ Files:
 
    - m.bat        Builds a1 using Aztec C Vers. 1.06D 8080  (C) 1982 1983 1984 by Manx Software Systems
    - mh.bat       Builds a1 using HI-TECH C COMPILER (CP/M-80) V3.09
+   - mhalt.bat    Builds a1 using the HI-TECH C Compiler with a native version of the optimizer called out below.
    - a1.c         Apple 1 emulator main app
    - m6502.c      MOS 6502 emulator
    - m6502.h      header for MOS 6502 emulator
