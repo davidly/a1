@@ -291,9 +291,8 @@ char * render_flags()
 
 void emulate()
 {
-    uint8_t op, lo, val;
-    uint16_t returnAddress, address;
-    bool branch;
+    uint8_t op, val, lo;
+    uint16_t address;
 
     do
     {
@@ -322,17 +321,17 @@ void emulate()
 
         switch( op )
         {
-            case 0x00: 
+            case 0x00:                                                                 /* brk */
             {
-                returnAddress = cpu.pc + 2;
-                push( returnAddress >> 8 );
-                push( returnAddress & 0xff );
+                address = cpu.pc + 2;
+                push( address >> 8 );
+                push( address & 0xff );
                 op_php(); 
                 cpu.fInterruptDisable = true;
                 cpu.pc = getword( 0xfffe );
                 continue;
             }
-            case 0x01: case 0x11: case 0x21: case 0x31: case 0x41: case 0x51: case 0x61: case 0x71: 
+            case 0x01: case 0x11: case 0x21: case 0x31: case 0x41: case 0x51: case 0x61: case 0x71: /* math */
             case 0xc1: case 0xd1: case 0xe1: case 0xf1: case 0xc5: case 0xd5: case 0xe5: case 0xf5:
             case 0x05: case 0x15: case 0x25: case 0x35: case 0x45: case 0x55: case 0x65: case 0x75:
             case 0x09: case 0x19: case 0x29: case 0x39: case 0x49: case 0x59: case 0x69: case 0x79:
@@ -342,73 +341,72 @@ void emulate()
                 lo = ( op & 0x0f );
                 if ( 1 == lo )
                 {
-                    if ( op & 0x10 )                                    
+                    if ( op & 0x10 )                                                   /* (a8), y */
                         val = getbyte( (uint16_t) cpu.y + getword( getbyte( cpu.pc + 1 ) ) );
-                    else                                                
+                    else                                                               /* (a8, x) */ 
                         val = getbyte( getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) ) );  
                 }
                 else if ( 5 == lo )
                 {
-                    address = getbyte( cpu.pc + 1 );
-                    if ( op & 0x10 )                                    
-                        address = 0xff & ( address + cpu.x );               
-                    val = getbyte( address );
+                    val = getbyte( cpu.pc + 1 );                                       /* a8 */
+                    if ( op & 0x10 )                                                   /* a8, x */  
+                        val = val + cpu.x;                                             /* wrap */     
+                    val = getbyte( val );
                 }
                 else if ( 9 == lo )
                 {
-                    if ( op & 0x10 )                                    
+                    if ( op & 0x10 )                                                   /* a16, y */ 
                         val = getbyte( getword( cpu.pc + 1 ) + cpu.y );
                     else                                                
-                        val = getbyte( cpu.pc + 1 );
+                        val = getbyte( cpu.pc + 1 );                                   /* #d8 */
                 }
                 else /* if ( 0xd == lo ) */
                 {
                     address = getword( cpu.pc + 1 );                 
-                    if ( op & 0x10 )                                    
-                        address += (uint16_t) cpu.x;
+                    if ( op & 0x10 )                                                   /* a16 */ 
+                        address += (uint16_t) cpu.x;                                   /* a16, x */
                     val = getbyte( address );
                 }
         
                 op_math( ( op >> 5 ), val );
                 break;
             }
-            case 0x06: case 0x16: case 0x26: case 0x36: case 0x46: case 0x56: case 0x66: case 0x76: 
+            case 0x06: case 0x16: case 0x26: case 0x36: case 0x46: case 0x56: case 0x66: case 0x76: /* rotate memory */
             case 0x0e: case 0x1e: case 0x2e: case 0x3e: case 0x4e: case 0x5e: case 0x6e: case 0x7e:
             {
-                lo = ( op & 0x0f );
-                if ( 0x06 == lo )
+                if ( 8 & op )
                 {
-                    address = getbyte( cpu.pc + 1 );
+                    address = getword( cpu.pc + 1 );                                   /* a16 */
                     if ( op & 0x10 )
-                        address += (uint16_t) cpu.x;               
+                        address += (uint16_t) cpu.x;                                   /* a16, x */
                 }
-                else /* if ( 0x0e == lo ) */
+                else
                 {
-                    address = getword( cpu.pc + 1 );                 
+                    address = getbyte( cpu.pc + 1 );                                   /* a8 */
                     if ( op & 0x10 )
-                        address += (uint16_t) cpu.x;               
+                        address = (uint8_t) ( address + cpu.x );                       /* a8, x */
                 }
-        
+
                 setbyte( address, op_rotate( op >> 5, getbyte( address ) ) );
                 break;
             }
-            case 0x08: { op_php(); break; } 
-            case OP_HOOK: { op = m_hook(); goto _op_rts; } 
-            case 0x10: case 0x30: case 0x50: case 0x70: case 0x90: case 0xb0: case 0xd0: case 0xf0: 
+            case 0x08: { op_php(); break; }                                            /* php  */
+            case OP_HOOK: { op = m_hook(); goto _op_rts; }                             /* hook */
+            case 0x10: case 0x30: case 0x50: case 0x70: case 0x90: case 0xb0: case 0xd0: case 0xf0: /* conditional branch */
             {
                 if ( op <= 0x30 )
-                    branch = cpu.fNegative;
+                    val = cpu.fNegative;
                 else if ( op <= 0x70 )
-                    branch = cpu.fOverflow;
+                    val = cpu.fOverflow;
                 else if ( op <= 0xb0 )
-                    branch = cpu.fCarry;
+                    val = cpu.fCarry;
                 else
-                    branch = cpu.fZero;
+                    val = cpu.fZero;
         
                 if ( 0 == ( op & 0x20 ) )
-                    branch = !branch;
+                    val = !val;
         
-                if ( branch )
+                if ( val )
                 {
                     /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
                     cpu.pc += ( 2 + sign_extend( (uint16_t) getbyte( cpu.pc + 1 ), 7 ) );
@@ -416,102 +414,93 @@ void emulate()
                 }
                 break;
             }
-            case 0x18: { cpu.fCarry = false; break; } 
-            case 0x20: 
+            case 0x18: { cpu.fCarry = false; break; }                                  /* clc */
+            case 0x20:                                                                 /* jsr a16 */
             {
-                address = getword( cpu.pc + 1 );
-                returnAddress = cpu.pc + 2;  
-                push( returnAddress >> 8 );
-                push( returnAddress & 0xff );
-                cpu.pc = address;
+                address = cpu.pc + 2;  
+                push( address >> 8 );
+                push( address & 0xff );
+                cpu.pc = getword( cpu.pc + 1 );
                 continue;
             }
-            case 0x24: { op_bit( getbyte( getbyte( cpu.pc + 1 ) ) ); break; } 
-            case 0x28: { op_pop_pf(); break; } 
-            case 0x2c: { op_bit( getbyte( getword( cpu.pc + 1 ) ) ); break; } 
-            case 0x38: { cpu.fCarry = true; break; } 
-            case 0x40: 
+            case 0x24: { op_bit( getbyte( getbyte( cpu.pc + 1 ) ) ); break; }          /* bit a8 NVZ */
+            case 0x28: { op_pop_pf(); break; }                                         /* plp NZCIDV */
+            case 0x2c: { op_bit( getbyte( getword( cpu.pc + 1 ) ) ); break; }          /* bit a16 NVZ */
+            case 0x38: { cpu.fCarry = true; break; }                                   /* sec */
+            case 0x40:                                                                 /* rti */
             {
                 op_pop_pf();
                 cpu.pc = pop();
                 cpu.pc |= ( ( (uint16_t) pop() ) << 8 );
                 continue;
             }
-            case 0x48: { push( cpu.a ); break; } 
-            case 0x4c: { cpu.pc = getword( cpu.pc + 1 ); continue; } 
-            case 0x58: { cpu.fInterruptDisable = false; break; } 
-            case 0x60: 
+            case 0x48: { push( cpu.a ); break; }                                       /* pha */
+            case 0x4c: { cpu.pc = getword( cpu.pc + 1 ); continue; }                   /* jmp a16 */
+            case 0x58: { cpu.fInterruptDisable = false; break; }                       /* cli */
+            case 0x60:                                                                 /* rts */
             {
                 _op_rts:
                 lo = pop();
                 cpu.pc = 1 + ( ( (uint16_t) pop() << 8 ) | lo );
                 continue;
             }
-            case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; } 
-            case 0x6a: case 0x4a: case 0x2a: case 0x0a: { cpu.a = op_rotate( ( op >> 5 ), cpu.a ); break; } 
-            case 0x6c: { cpu.pc = getword( getword( cpu.pc + 1 ) ); continue; } 
-            case 0x78: { cpu.fInterruptDisable = true; break; } 
-            case 0x81: case 0x84: case 0x85: case 0x86: case 0x8c: case 0x8d: case 0x8e: 
+            case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; }                      /* pla NZ */
+            case 0x6a: case 0x4a: case 0x2a: case 0x0a: { cpu.a = op_rotate( ( op >> 5 ), cpu.a ); break; } /* asl, rol, lsr, ror */
+            case 0x6c: { cpu.pc = getword( getword( cpu.pc + 1 ) ); continue; }        /* jmp (a16) */
+            case 0x78: { cpu.fInterruptDisable = true; break; }                        /* sei */
+            case 0x81: case 0x84: case 0x85: case 0x86: case 0x8c: case 0x8d: case 0x8e: /* sta, stx, sty */
             case 0x91: case 0x94: case 0x95: case 0x96: case 0x99: case 0x9d:
             {
-                if ( 0x81 == op )                              
-                    address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) );   
+                if ( 0x81 == op )                                                      /* (a8, x) */
+                    address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) );  /* wrap */ 
                 else if ( 0x91 == op )                         
-                {
-                    address = getword( getbyte( cpu.pc + 1 ) );
-                    address += cpu.y;
-                }
-                else if ( op >= 0x84 && op <= 0x86 )           
+                    address = cpu.y + getword( getbyte( cpu.pc + 1 ) );
+                else if ( op >= 0x84 && op <= 0x86 )                                   /* a8 */
                     address = getbyte( cpu.pc + 1 );
-                else if ( op == 0x94 || op == 0x95 )           
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ); 
-                else if ( 0x96 == op )                         
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y ); 
-                else if ( 0x99 == op )                         
+                else if ( op == 0x94 || op == 0x95 )                                   /* a8, x */
+                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x );                /* wrap */
+                else if ( 0x96 == op )                                                 /* a8, y */
+                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y );                /* wrap */
+                else if ( 0x99 == op )                                                 /* a16, y */
                     address = getword( cpu.pc + 1 ) + cpu.y;             
-                else if ( op >= 0x8c && op <= 0x8e )           
+                else if ( 0x9d == op )                                                 /* a16, x */
+                    address = getword( cpu.pc + 1 ) + cpu.x;
+                else /* if ( op >= 0x8c && op <= 0x8e ) */                             /* a16 */
                     address = getword( cpu.pc + 1 );                 
-                else if ( 0x9d == op )                         
-                    address = getword( cpu.pc + 1 ) + cpu.x;             
 
                 setbyte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
                 
-                if ( 0xd012 == address )   
+                if ( 0xd012 == address )                                               /* apple 1 memory-mapped I/O */
                     m_store( address );
                 break;
             }
-            case 0x88: { cpu.y--; set_nz( cpu.y ); break; } 
-            case 0x8a: { cpu.a = cpu.x; set_nz( cpu.a ); break; } 
-            case 0x98: { cpu.a = cpu.y; set_nz( cpu.a ); break; } 
-            case 0x9a: { cpu.sp = cpu.x; break; } 
-            case 0xa0: case 0xa1: case 0xa2: case 0xa4: case 0xa5: case 0xa6: case 0xa9: case 0xac: case 0xad: case 0xae: 
+            case 0x88: { cpu.y--; set_nz( cpu.y ); break; }                            /* dey */
+            case 0x8a: { cpu.a = cpu.x; set_nz( cpu.a ); break; }                      /* txa */
+            case 0x98: { cpu.a = cpu.y; set_nz( cpu.a ); break; }                      /* tya */
+            case 0x9a: { cpu.sp = cpu.x; break; }                                      /* txs no flags set */
+            case 0xa0: case 0xa1: case 0xa2: case 0xa4: case 0xa5: case 0xa6: case 0xa9: case 0xac: case 0xad: case 0xae: /* lda, ldx, ldy */
             case 0xb1: case 0xb4: case 0xb5: case 0xb6: case 0xb9: case 0xbc: case 0xbd: case 0xbe: 
             {
-                lo = ( op & 0x0f );
-                if ( ( 0xa0 == ( op & 0xf0 ) ) && ( 0 == lo || 2 == lo || 9 == lo ) ) 
-                    address = cpu.pc + 1;                          
-                else if ( op == 0xa1 )                                     
-                    address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) );    
-                else if ( op == 0xb1 )                                     
-                {
-                    val = getbyte( cpu.pc + 1 );
-                    address = getword( (uint16_t) val );
-                    address += cpu.y;
-                }
-                else if ( op >= 0xa4 && op <= 0xa6 )               
+                if ( 0xa0 == op || 0xa2 == op || 0xa9 == op )                          /* #d8 */
+                    address = cpu.pc + 1;                                              
+                else if ( 0xa1 == op )                                                 /* (a8, x ) */
+                    address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) );     /* wrap */
+                else if ( 0xb1 == op )                                                 /* (a8), y */
+                    address = cpu.y + getword( (uint16_t) getbyte( cpu.pc + 1 ) );
+                else if ( op >= 0xa4 && op <= 0xa6 )                                   /* a8 */
                     address = getbyte( cpu.pc + 1 );
-                else if ( 0xb4 == op || 0xb5 == op )               
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x );     
-                else if ( 0xb6 == op )                             
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y );     
-                else if ( op >= 0xac && op <= 0xae )               
+                else if ( 0xb4 == op || 0xb5 == op )                                   /* a8, x */
+                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x );                /* wrap */
+                else if ( 0xb6 == op )                                                 /* a8, y */
+                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y );                /* wrap */
+                else if ( op >= 0xac && op <= 0xae )                                   /* a16 */
                     address = getword( cpu.pc + 1 );                 
-                else if ( 0xbc == op || 0xbd == op )               
+                else if ( 0xbc == op || 0xbd == op )                                   /* a16, x */
                     address = getword( cpu.pc + 1 ) + cpu.x;             
-                else if ( 0xb9 == op || 0xbe == op )               
+                else /* if ( 0xb9 == op || 0xbe == op ) */                             /* a16, y */
                     address = getword( cpu.pc + 1 ) + cpu.y;             
                 
-                if ( address >= 0xd010 && address <= 0xd012 ) 
+                if ( address >= 0xd010 && address <= 0xd012 )                          /* apple 1 memory-mapped I/O */
                     setbyte( address, m_load( address ) );
     
                 val = getbyte( address );
@@ -525,18 +514,18 @@ void emulate()
                     cpu.y = val;
                 break;
             }
-            case 0xa8: { cpu.y = cpu.a; set_nz( cpu.y ); break; } 
-            case 0xaa: { cpu.x = cpu.a; set_nz( cpu.x ); break; } 
-            case 0xb8: { cpu.fOverflow = false; break; } 
-            case 0xba: { cpu.x = cpu.sp; set_nz( cpu.x ); break; } 
-            case 0xc0: { op_cmp( cpu.y, getbyte( cpu.pc + 1 ) ); break; } 
-            case 0xc4: { op_cmp( cpu.y, getbyte( getbyte( cpu.pc + 1 ) ) ); break; } 
-            case 0xc6: case 0xce: case 0xd6: case 0xde: case 0xe6: case 0xee: case 0xf6: case 0xfe:  
+            case 0xa8: { cpu.y = cpu.a; set_nz( cpu.y ); break; }                      /* tay */
+            case 0xaa: { cpu.x = cpu.a; set_nz( cpu.x ); break; }                      /* tax */
+            case 0xb8: { cpu.fOverflow = false; break; }                               /* clv */
+            case 0xba: { cpu.x = cpu.sp; set_nz( cpu.x ); break; }                     /* tsx */
+            case 0xc0: { op_cmp( cpu.y, getbyte( cpu.pc + 1 ) ); break; }              /* cpy #d8 */
+            case 0xc4: { op_cmp( cpu.y, getbyte( getbyte( cpu.pc + 1 ) ) ); break; }   /* cpy a8 */
+            case 0xc6: case 0xce: case 0xd6: case 0xde: case 0xe6: case 0xee: case 0xf6: case 0xfe:  /* inc and dec memory */
             {
-                if ( 6 == ( op & 0xf ) )
-                    address = getbyte( cpu.pc + 1 );
-                else
+                if ( op & 8 )
                     address = getword( cpu.pc + 1 );
+                else
+                    address = getbyte( cpu.pc + 1 );
         
                 if ( op & 0x10 )
                     address += cpu.x;
@@ -550,23 +539,23 @@ void emulate()
                 setbyte( address, val );
                 set_nz( val );
                 break;
-            }
-            case 0xc8: { cpu.y++; set_nz( cpu.y ); break; } 
-            case 0xca: { cpu.x--; set_nz( cpu.x ); break; } 
-            case 0xcc: { op_cmp( cpu.y, getbyte( getword( cpu.pc + 1 ) ) ); break; } 
-            case 0xd8: { cpu.fDecimal = false; break; } 
-            case 0xe0: { op_cmp( cpu.x, getbyte( cpu.pc + 1 ) ); break; } 
-            case 0xe4: { op_cmp( cpu.x, getbyte( getbyte( cpu.pc + 1 ) ) ); break; } 
-            case 0xe8: { cpu.x++; set_nz( cpu.x ); break; } 
-            case 0xea: { break; } 
-            case 0xec: { op_cmp( cpu.x, getbyte( getword( cpu.pc + 1 ) ) ); break; } 
-            case 0xf8: { cpu.fDecimal = true; break; } 
-            case 0xff: { m_halt(); goto _all_done; } 
-            default: m_hard_exit( "mos6502 unknown opcode %02x\n", op );
+            }                                                                           
+            case 0xc8: { cpu.y++; set_nz( cpu.y ); break; }                            /* iny */
+            case 0xca: { cpu.x--; set_nz( cpu.x ); break; }                            /* dex */
+            case 0xcc: { op_cmp( cpu.y, getbyte( getword( cpu.pc + 1 ) ) ); break; }   /* cpy a16 */
+            case 0xd8: { cpu.fDecimal = false; break; }                                /* cld */
+            case 0xe0: { op_cmp( cpu.x, getbyte( cpu.pc + 1 ) ); break; }              /* cpx #d8 */
+            case 0xe4: { op_cmp( cpu.x, getbyte( getbyte( cpu.pc + 1 ) ) ); break; }   /* cpx a8 */
+            case 0xe8: { cpu.x++; set_nz( cpu.x ); break; }                            /* inx */
+            case 0xea: { break; }                                                      /* nop */
+            case 0xec: { op_cmp( cpu.x, getbyte( getword( cpu.pc + 1 ) ) ); break; }   /* cpx a16 */
+            case 0xf8: { cpu.fDecimal = true; break; }                                 /* sed */
+            case 0xff: { m_halt(); goto _all_done; }                                   /* halt */
+            default: m_hard_exit( "unknown mos6502 opcode %02x\n", op );
         }
 
         cpu.pc += ins_len_6502[ op ];
-        goto _top_of_loop; /* old compilers generate code to check if while( true ) is in fact true */
+        goto _top_of_loop; /* old C compilers generate code to check if while( true ) is in fact true */
     } while( true );
 
 _all_done:
