@@ -11,6 +11,7 @@ Files:
 
    - m.bat        Builds a1 using Aztec C Vers. 1.06D 8080  (C) 1982 1983 1984 by Manx Software Systems
    - mh.bat       Builds a1 using HI-TECH C COMPILER (CP/M-80) V3.09
+   - mhalt.bat    Builds a1 using the HI-TECH C Compiler with a native version of the optimizer called out below.
    - a1.c         Apple 1 emulator main app
    - m6502.c      MOS 6502 emulator
    - m6502.h      header for MOS 6502 emulator
@@ -48,8 +49,9 @@ The CP/M C compilers can be found here: [CP/M Compilers](https://github.com/davi
 [NTVCM](https://github.com/davidly/cpm_compilers) is an 8080/Z80 CP/M 2.2 emulator that can be used to both compile and run a1.
 
 Notes:
-  - Performance on physical CP/M machines isn't great. When run on a 4Mhz Z80, A1 built with Aztec C is 231x slower than a physical 1Mhz 6502. A1 built with the HI-TECH compiler is 180x slower and requires a Z80. That said, performnce on modern hardware is great.
+  - Performance on physical CP/M machines isn't great. When run on a 4Mhz Z80, A1 built with Aztec C is 231x slower than a physical 1Mhz 6502. A1 built with the HI-TECH compiler is 146x slower and requires a Z80. That said, performnce on modern hardware is great.
   - The Aztec Z80 variant compiler CZ.COM produces slower code than the 8080 CC.COM variant and should be avoided.
+  - When using the HI-TECH compiler, get the [optimizer](https://github.com/nikitinprior/doptim) built for your native platform and run it as shown in mhalt.bat for the best performance. The emulator C code is too large for the native optimizer to run.
   - CP/M machines have at most 64k of RAM, so the Apple 1 machine has less than that:
       - 32K of RAM starting at address 0
       - 32 bytes for memory-mapped I/O to the keyboard and display at address 0xd000
