@@ -523,12 +523,17 @@ void emulate()
             case 0xc6: case 0xce: case 0xd6: case 0xde: case 0xe6: case 0xee: case 0xf6: case 0xfe:  /* inc and dec memory */
             {
                 if ( op & 8 )
+                {
                     address = getword( cpu.pc + 1 );
+                    if ( op & 0x10 )
+                        address += cpu.x;
+                }
                 else
+                {
                     address = getbyte( cpu.pc + 1 );
-        
-                if ( op & 0x10 )
-                    address += cpu.x;
+                    if ( op & 0x10 )
+                        address = (uint8_t) ( address + cpu.x );                       /* wrap in 0-page */
+                }
 
                 val = getbyte( address );
                 if ( op >= 0xe6 )
