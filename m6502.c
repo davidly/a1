@@ -296,7 +296,7 @@ void emulate()
 
     do
     {
-        _top_of_loop:
+_top_of_loop:
 
         if ( 0 != g_State )
         {
@@ -439,7 +439,7 @@ void emulate()
             case 0x58: { cpu.fInterruptDisable = false; break; }                       /* cli */
             case 0x60:                                                                 /* rts */
             {
-                _op_rts:
+_op_rts:
                 lo = pop();
                 cpu.pc = 1 + ( ( (uint16_t) pop() << 8 ) | lo );
                 continue;
@@ -448,28 +448,18 @@ void emulate()
             case 0x6a: case 0x4a: case 0x2a: case 0x0a: { cpu.a = op_rotate( ( op >> 5 ), cpu.a ); break; } /* asl, rol, lsr, ror */
             case 0x6c: { cpu.pc = getword( getword( cpu.pc + 1 ) ); continue; }        /* jmp (a16) */
             case 0x78: { cpu.fInterruptDisable = true; break; }                        /* sei */
-            case 0x81: case 0x84: case 0x85: case 0x86: case 0x8c: case 0x8d: case 0x8e: /* sta, stx, sty */
-            case 0x91: case 0x94: case 0x95: case 0x96: case 0x99: case 0x9d:
+            case 0x81: { address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) ); goto _st_complete; } /* stx (a8, x) */
+            case 0x84: case 0x85: case 0x86: { address = getbyte( cpu.pc + 1 ); goto _st_complete; }         /* sty/sta/stx a8 */
+            case 0x8c: case 0x8d: case 0x8e: { address = getword( cpu.pc + 1 ); goto _st_complete; }         /* sty/sta/stx a16 */
+            case 0x91: { address = cpu.y + getword( getbyte( cpu.pc + 1 ) ); goto _st_complete; }            /* sta (a8), y */
+            case 0x94: case 0x95: { address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ); goto _st_complete; } /* sta/sty a8, x */
+            case 0x96: { address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y ); goto _st_complete; }            /* stx a8, y */
+            case 0x99: { address = getword( cpu.pc + 1 ) + cpu.y; goto _st_complete; }                       /* sta a16, y */
+            case 0x9d:                                                                                       /* sta a16, x */
             {
-                if ( 0x81 == op )                                                      /* (a8, x) */
-                    address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) );  /* wrap */ 
-                else if ( 0x91 == op )                         
-                    address = cpu.y + getword( getbyte( cpu.pc + 1 ) );
-                else if ( op >= 0x84 && op <= 0x86 )                                   /* a8 */
-                    address = getbyte( cpu.pc + 1 );
-                else if ( op == 0x94 || op == 0x95 )                                   /* a8, x */
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x );                /* wrap */
-                else if ( 0x96 == op )                                                 /* a8, y */
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y );                /* wrap */
-                else if ( 0x99 == op )                                                 /* a16, y */
-                    address = getword( cpu.pc + 1 ) + cpu.y;             
-                else if ( 0x9d == op )                                                 /* a16, x */
-                    address = getword( cpu.pc + 1 ) + cpu.x;
-                else /* if ( op >= 0x8c && op <= 0x8e ) */                             /* a16 */
-                    address = getword( cpu.pc + 1 );                 
-
+                address = getword( cpu.pc + 1 ) + cpu.x;
+_st_complete:
                 setbyte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
-                
                 if ( 0xd012 == address )                                               /* apple 1 memory-mapped I/O */
                     m_store( address );
                 break;
@@ -478,31 +468,21 @@ void emulate()
             case 0x8a: { cpu.a = cpu.x; set_nz( cpu.a ); break; }                      /* txa */
             case 0x98: { cpu.a = cpu.y; set_nz( cpu.a ); break; }                      /* tya */
             case 0x9a: { cpu.sp = cpu.x; break; }                                      /* txs no flags set */
-            case 0xa0: case 0xa1: case 0xa2: case 0xa4: case 0xa5: case 0xa6: case 0xa9: case 0xac: case 0xad: case 0xae: /* lda, ldx, ldy */
-            case 0xb1: case 0xb4: case 0xb5: case 0xb6: case 0xb9: case 0xbc: case 0xbd: case 0xbe: 
+            case 0xa0: case 0xa2: case 0xa9: { address = cpu.pc + 1; goto _ld_complete; }                     /* ldy/ldx/lda #d8 */
+            case 0xa1: { address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) ); goto _ld_complete; }  /* lda (a8, x ) */
+            case 0xa4 : case 0xa5: case  0xa6: { address = getbyte( cpu.pc + 1 ); goto _ld0_complete; }       /* ldy/lda/ldx a8 */
+            case 0xb1: { address = cpu.y + getword( (uint16_t) getbyte( cpu.pc + 1 ) ); goto _ld_complete; }  /* lda (a8), y */
+            case 0xb4: case 0xb5: { address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ); goto _ld0_complete; } /* ldy/lda a8, x */
+            case 0xb6: { address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y ); goto _ld0_complete; }            /* ldx a8, y */
+            case 0xac: case 0xad: case 0xae:{ address = getword( cpu.pc + 1 ); goto _ld_complete; }           /* ldy/lda/ldx a16 */
+            case 0xb9 : case 0xbe: { address = getword( cpu.pc + 1 ) + cpu.y; goto _ld_complete; }            /* lda/ldx a16, y */
+            case 0xbc: case 0xbd:                                                                             /* ldy/lda a16, x */
             {
-                if ( 0xa0 == op || 0xa2 == op || 0xa9 == op )                          /* #d8 */
-                    address = cpu.pc + 1;                                              
-                else if ( 0xa1 == op )                                                 /* (a8, x ) */
-                    address = getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) );     /* wrap */
-                else if ( 0xb1 == op )                                                 /* (a8), y */
-                    address = cpu.y + getword( (uint16_t) getbyte( cpu.pc + 1 ) );
-                else if ( op >= 0xa4 && op <= 0xa6 )                                   /* a8 */
-                    address = getbyte( cpu.pc + 1 );
-                else if ( 0xb4 == op || 0xb5 == op )                                   /* a8, x */
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x );                /* wrap */
-                else if ( 0xb6 == op )                                                 /* a8, y */
-                    address = 0xff & ( getbyte( cpu.pc + 1 ) + cpu.y );                /* wrap */
-                else if ( op >= 0xac && op <= 0xae )                                   /* a16 */
-                    address = getword( cpu.pc + 1 );                 
-                else if ( 0xbc == op || 0xbd == op )                                   /* a16, x */
-                    address = getword( cpu.pc + 1 ) + cpu.x;             
-                else /* if ( 0xb9 == op || 0xbe == op ) */                             /* a16, y */
-                    address = getword( cpu.pc + 1 ) + cpu.y;             
-                
+                address = getword( cpu.pc + 1 ) + cpu.x;             
+_ld_complete:   /* load */
                 if ( address >= 0xd010 && address <= 0xd012 )                          /* apple 1 memory-mapped I/O */
                     setbyte( address, m_load( address ) );
-    
+_ld0_complete:  /* load from page 0 */
                 val = getbyte( address );
                 set_nz( val );
         
