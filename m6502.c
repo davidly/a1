@@ -208,10 +208,12 @@ void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
     cpu.a = ( ( result / 10 ) << 4 ) + ( result % 10 );
 }
 
-void op_math( math, rhs ) uint8_t math; uint8_t rhs;
+void op_math( op, rhs ) uint8_t op; uint8_t rhs;
 {
     uint16_t res16;
     uint8_t result;
+    uint8_t math;
+    math = op >> 5;
 
     if ( 6 == math )
     {
@@ -331,44 +333,46 @@ _top_of_loop:
                 cpu.pc = getword( 0xfffe );
                 continue;
             }
-            case 0x01: case 0x11: case 0x21: case 0x31: case 0x41: case 0x51: case 0x61: case 0x71: /* math */
-            case 0xc1: case 0xd1: case 0xe1: case 0xf1: case 0xc5: case 0xd5: case 0xe5: case 0xf5:
-            case 0x05: case 0x15: case 0x25: case 0x35: case 0x45: case 0x55: case 0x65: case 0x75:
-            case 0x09: case 0x19: case 0x29: case 0x39: case 0x49: case 0x59: case 0x69: case 0x79:
-            case 0xc9: case 0xd9: case 0xe9: case 0xf9: case 0xcd: case 0xdd: case 0xed: case 0xfd:
-            case 0x0d: case 0x1d: case 0x2d: case 0x3d: case 0x4d: case 0x5d: case 0x6d: case 0x7d:
+            case 0x01: case 0x21: case 0x41: case 0x61: case 0xc1: case 0xe1: /* ora/and/eor/adc/cmp/sbc (a8, x) */
             {
-                lo = ( op & 0x0f );
-                if ( 1 == lo )
-                {
-                    if ( op & 0x10 )                                                   /* (a8), y */
-                        val = getbyte( (uint16_t) cpu.y + getword( getbyte( cpu.pc + 1 ) ) );
-                    else                                                               /* (a8, x) */ 
-                        val = getbyte( getword( 0xff & ( getbyte( cpu.pc + 1 ) + cpu.x ) ) );  
-                }
-                else if ( 5 == lo )
-                {
-                    val = getbyte( cpu.pc + 1 );                                       /* a8 */
-                    if ( op & 0x10 )                                                   /* a8, x */  
-                        val = val + cpu.x;                                             /* wrap */     
-                    val = getbyte( val );
-                }
-                else if ( 9 == lo )
-                {
-                    if ( op & 0x10 )                                                   /* a16, y */ 
-                        val = getbyte( getword( cpu.pc + 1 ) + cpu.y );
-                    else                                                
-                        val = getbyte( cpu.pc + 1 );                                   /* #d8 */
-                }
-                else /* if ( 0xd == lo ) */
-                {
-                    address = getword( cpu.pc + 1 );                 
-                    if ( op & 0x10 )                                                   /* a16 */ 
-                        address += (uint16_t) cpu.x;                                   /* a16, x */
-                    val = getbyte( address );
-                }
-        
-                op_math( ( op >> 5 ), val );
+                val = getbyte( cpu.pc + 1 ) + cpu.x; /* reduce expression complexity for hisoft C */
+                op_math( op, getbyte( getword( val ) ) );
+                break;
+            }
+            case 0x11: case 0x31: case 0x51: case 0x71: case 0xd1: case 0xf1: /* ora/and/eor/adc/cmp/sbc (a8), y */
+            {
+                val = getbyte( cpu.pc + 1 ); /* reduce expression complexity for hisoft C */
+                op_math( op, getbyte( (uint16_t) cpu.y + getword( val ) ) );
+                break;
+            }
+            case 0x05: case 0x25: case 0x45: case 0x65: case 0xc5: case 0xe5: /* ora/and/eor/adc/cmp/sbc a8 */
+            {
+                op_math( op, getbyte( getbyte( cpu.pc + 1 ) ) );
+                break;
+            }
+            case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5: /* ora/and/eor/adc/cmp/sbca8, x */  
+            {
+                op_math( op, getbyte( cpu.x + getbyte( cpu.pc + 1 ) ) );
+                break;
+            }
+            case 0x09: case 0x29: case 0x49: case 0x69: case 0xc9: case 0xe9:  /* ora/and/eor/adc/cmp/sbc #d8 */
+            {
+                op_math( op, getbyte( cpu.pc + 1 ) );
+                break;
+            }
+            case 0x19: case 0x39: case 0x59: case 0x79: case 0xd9: case 0xf9: /* ora/and/eor/adc/cmp/sbc a16, y */
+            {
+                op_math( op, getbyte( getword( cpu.pc + 1 ) + cpu.y ) );
+                break;
+            }
+            case 0x0d: case 0x2d: case 0x4d: case 0x6d: case 0xcd: case 0xed:  /* ora/and/eor/adc/cmp/sbc a16 */
+            {
+                op_math( op, getbyte( getword( cpu.pc + 1 ) ) );
+                break;
+            }
+            case 0x1d: case 0x3d: case 0x5d: case 0x7d: case 0xdd: case 0xfd: /* ora/and/eor/adc/cmp/sbc a16, x */
+            {
+                op_math( op, getbyte( (uint16_t) cpu.x + getword( cpu.pc + 1 ) ) );
                 break;
             }
             case 0x06: case 0x16: case 0x26: case 0x36: case 0x46: case 0x56: case 0x66: case 0x76: /* rotate memory */
@@ -392,27 +396,20 @@ _top_of_loop:
             }
             case 0x08: { op_php(); break; }                                            /* php  */
             case OP_HOOK: { op = m_hook(); goto _op_rts; }                             /* hook */
-            case 0x10: case 0x30: case 0x50: case 0x70: case 0x90: case 0xb0: case 0xd0: case 0xf0: /* conditional branch */
+            case 0x10: { if ( !cpu.fNegative ) goto _branch; break; }                  /* bpl */
+            case 0x30: { if ( cpu.fNegative ) goto _branch; break; }                   /* bmi */
+            case 0x50: { if ( !cpu.fOverflow ) goto _branch; break; }                  /* bvc */
+            case 0x70: { if ( cpu.fOverflow ) goto _branch; break; }                   /* bvs */
+            case 0x90: { if ( !cpu.fCarry ) goto _branch; break; }                     /* bcc */
+            case 0xb0: { if ( cpu.fCarry ) goto _branch; break; }                      /* bcs */
+            case 0xd0: { if ( !cpu.fZero ) goto _branch; break; }                      /* bne */
+            case 0xf0:                                                                 /* beq */
             {
-                if ( op <= 0x30 )
-                    val = cpu.fNegative;
-                else if ( op <= 0x70 )
-                    val = cpu.fOverflow;
-                else if ( op <= 0xb0 )
-                    val = cpu.fCarry;
-                else
-                    val = cpu.fZero;
-        
-                if ( 0 == ( op & 0x20 ) )
-                    val = !val;
-        
-                if ( val )
-                {
-                    /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
-                    cpu.pc += ( 2 + sign_extend( (uint16_t) getbyte( cpu.pc + 1 ), 7 ) );
-                    continue;
-                }
-                break;
+                if ( !cpu.fZero ) break;                                               
+_branch:
+                /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
+                cpu.pc += ( 2 + sign_extend( (uint16_t) getbyte( cpu.pc + 1 ), 7 ) );
+                continue;
             }
             case 0x18: { cpu.fCarry = false; break; }                                  /* clc */
             case 0x20:                                                                 /* jsr a16 */

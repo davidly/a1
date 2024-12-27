@@ -1,26 +1,26 @@
-Fri 12/27/2024  7:16:09.44 
+Fri 12/27/2024  8:26:44.37 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            3,712
-Z80  cycles:            11,451,102,411
+elapsed milliseconds:            3,495
+Z80  cycles:            10,907,635,209
 clock rate:                  unbounded
-approx ms at 4Mhz:           2,862,775 == 0 days, 0 hours, 47 minutes, 42 seconds, 775 milliseconds
+approx ms at 4Mhz:           2,726,908 == 0 days, 0 hours, 45 minutes, 26 seconds, 908 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:            1,080
-Z80  cycles:             3,315,183,924
+elapsed milliseconds:            1,023
+Z80  cycles:             3,106,211,924
 clock rate:                  unbounded
-approx ms at 4Mhz:             828,795 == 0 days, 0 hours, 13 minutes, 48 seconds, 795 milliseconds
+approx ms at 4Mhz:             776,552 == 0 days, 0 hours, 12 minutes, 56 seconds, 552 milliseconds
 t1 assembly 
 
 195D$
 
-elapsed milliseconds:              357
-Z80  cycles:             1,131,598,501
+elapsed milliseconds:              341
+Z80  cycles:             1,046,791,403
 clock rate:                  unbounded
-approx ms at 4Mhz:             282,899 == 0 days, 0 hours, 4 minutes, 42 seconds, 899 milliseconds
+approx ms at 4Mhz:             261,697 == 0 days, 0 hours, 4 minutes, 21 seconds, 697 milliseconds
 6502 functional tests 
 S
 
@@ -105,4 +105,4 @@ E000: 4C
 FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
-Fri 12/27/2024  7:17:45.25 
+Fri 12/27/2024  8:28:13.54 
