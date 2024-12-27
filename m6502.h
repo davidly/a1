@@ -32,15 +32,14 @@ extern void end_emulation();
 extern void soft_reset();
 extern void power_on();
 
-extern void * getmem();
+extern void * get_mem();
 
 /* use #define instead of functions because old compilers don't inline functions */
 
-#define getword( addr ) ( * (uint16_t *) getmem( addr ) )
-#define getbyte( addr ) ( * (uint8_t *) getmem( addr ) )
+#define get_word( addr ) ( * (uint16_t *) get_mem( addr ) )
+#define get_byte( addr ) ( * (uint8_t *) get_mem( addr ) )
 
-#define setword( addr, value ) * (uint16_t *) getmem( addr ) = value
-#define setbyte( addr, value ) * (uint8_t *) getmem( addr ) = value
+#define set_byte( addr, value ) * (uint8_t *) get_mem( addr ) = value
 
 struct MOS_6502
 {

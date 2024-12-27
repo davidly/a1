@@ -34,7 +34,7 @@ ntvcm a1 -l:hello.bas >>%outputfile%
 
 echo BASIC tic-tac-toe first move
 echo BASIC tic-tac-toe first move >>%outputfile%
-ntvcm a1 -l:ttt1st.bas >>%outputfile%
+ntvcm -p a1 -l:ttt1st.bas >>%outputfile%
 
 echo %date% %time% >>%outputfile%
 diff baseline_%outputfile% %outputfile%

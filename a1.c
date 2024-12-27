@@ -475,7 +475,7 @@ uint8_t m_load( address ) uint16_t address;
             ch = kbd_char;
             ch = (char) toupper( ch );
             ch |= 0x80;
-            setbyte( 0xd011, 0 );
+            set_byte( 0xd011, 0 );
             return ch;
         }
 
@@ -484,12 +484,12 @@ uint8_t m_load( address ) uint16_t address;
         {
             ch = (char) toupper( ch );
             ch |= 0x80;
-            setbyte( 0xd011, 0 );
+            set_byte( 0xd011, 0 );
             return ch;
         }
     }
 
-    return getbyte( address );
+    return get_byte( address );
 }
 
 void m_store( address ) uint16_t address;
@@ -498,7 +498,7 @@ void m_store( address ) uint16_t address;
 
     if ( 0xd012 == address )
     {
-        ch = 0x7f & getbyte( 0xd012 );
+        ch = 0x7f & get_byte( 0xd012 );
         if ( 0x7f != ch && 0x0a != ch )
         {
             if ( 0x0d == ch )
@@ -507,7 +507,7 @@ void m_store( address ) uint16_t address;
             printf( "%c", ch );
             fflush( stdout );
         }
-        setbyte( address, ch );
+        set_byte( address, ch );
     }
 }
 
@@ -598,7 +598,7 @@ static bool load_intel( fp ) FILE * fp;
                     usage( "malformed input file" );
 
                 val = read_byte( buf + ( 2 * x ) + 9 );
-                setbyte( offset + x, val );
+                set_byte( offset + x, val );
             }
         }
         else
@@ -681,7 +681,7 @@ bool loadFile( filePath ) char * filePath;
                     {
                         b = (uint8_t) hextoui( pnext );
                         pnext += 2;
-                        setbyte( a++, b );
+                        set_byte( a++, b );
                     }
                     else
                         break;
@@ -716,14 +716,14 @@ void invoke_command( pcFile ) char * pcFile;
 
     if ( g_useHooks )
     {
-        setbyte( 0xff1f, OP_HOOK );
-        setbyte( 0xffdc, OP_HOOK );
-        setbyte( 0xffe5, OP_HOOK );
-        setbyte( 0xffef, OP_HOOK );
+        set_byte( 0xff1f, OP_HOOK );
+        set_byte( 0xffdc, OP_HOOK );
+        set_byte( 0xffe5, OP_HOOK );
+        set_byte( 0xffef, OP_HOOK );
     }
 
     if ( g_exitOnMonitor )
-        setbyte( 0xff1f, OP_HALT );
+        set_byte( 0xff1f, OP_HALT );
 
     emulate();
 }
