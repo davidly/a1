@@ -55,10 +55,11 @@ void * get_mem( address ) uint16_t address;
     return 0; /* avoid compiler warning */
 }
 
-static void push( x ) uint8_t x; { set_byte( 0x0100 + cpu.sp, x ); cpu.sp--; }
-static uint8_t pop() { cpu.sp++; return get_byte( 0x0100 + cpu.sp ); }
+#define push( x ) set_byte( 0x0100 + cpu.sp--, ( x ) )
+#define pop() get_byte( 0x0100 + ++cpu.sp )
 
-#define set_nz( x ) cpu.fNegative = ( 0 != ( ( x ) & 0x80 ) ), cpu.fZero = !( x )
+/* Aztec C generates better code for !! than 0 !=. There is no difference for HI-TECH C */
+#define set_nz( x ) cpu.fNegative = ( !! ( ( x ) & 0x80 ) ), cpu.fZero = ! ( x )
 
 void power_on()
 {
@@ -110,20 +111,20 @@ uint8_t op_rotate( op, val ) uint8_t op; uint8_t val;
     rotate = op >> 5;
     if ( 0 == rotate ) /* asl */        
     {
-        cpu.fCarry = ( 0 != ( 0x80 & val ) );
+        cpu.fCarry = !! ( 0x80 & val );
         val <<= 1;
     }
     else if ( 1 == rotate ) /* rol */   
     {
         oldCarry = cpu.fCarry;
-        cpu.fCarry = ( 0 != ( 0x80 & val ) );
+        cpu.fCarry = !! ( 0x80 & val );
         val <<= 1;
         if ( oldCarry )
             val |= 1;
     }
     else if ( 2 == rotate ) /* lsr */   
     {
-        cpu.fCarry = ( 1 & val );
+        cpu.fCarry = ( val & 1 );
         val >>= 1;
     }
     else /* ror */
@@ -149,8 +150,8 @@ void op_cmp( lhs, rhs ) uint8_t lhs; uint8_t rhs;
 
 void op_bit( val ) uint8_t val;
 {
-    cpu.fNegative = ( 0 != ( val & 0x80 ) );
-    cpu.fOverflow = ( 0 != ( val & 0x40 ) );
+    cpu.fNegative = !! ( val & 0x80 );
+    cpu.fOverflow = !! ( val & 0x40 );
     cpu.fZero = ! ( cpu.a & val );
 }
 
@@ -248,11 +249,11 @@ void op_math( op, rhs ) uint8_t op; uint8_t rhs;
 void op_pop_pf()
 {
     cpu.pf = pop();
-    cpu.fNegative = ( 0 != ( cpu.pf & 0x80 ) );
-    cpu.fOverflow = ( 0 != ( cpu.pf & 0x40 ) );
-    cpu.fDecimal = ( 0 != ( cpu.pf & 8 ) );
-    cpu.fInterruptDisable = ( 0 != ( cpu.pf & 4 ) );
-    cpu.fZero = ( 0 != ( cpu.pf & 2 ) );
+    cpu.fNegative = !! ( cpu.pf & 0x80 );
+    cpu.fOverflow = !! ( cpu.pf & 0x40 );
+    cpu.fDecimal = !! ( cpu.pf & 8 );
+    cpu.fInterruptDisable = !! ( cpu.pf & 4 );
+    cpu.fZero = !! ( cpu.pf & 2 );
     cpu.fCarry = ( cpu.pf & 1 ); 
 }
 
@@ -292,8 +293,7 @@ void emulate()
 
     do
     {
-_top_of_loop:
-
+_loop_start:
         if ( 0 != g_State )
         {
             if ( g_State & stateEndEmulation )
@@ -514,7 +514,7 @@ _crement_complete:
         }
 
         cpu.pc += ins_len_6502[ op ];
-        goto _top_of_loop; /* old C compilers generate code to check if while( true ) is in fact true */
+        goto _loop_start; /* old C compilers generate code to check if while( true ) is in fact true. goto is faster than continue */
     } while( true );
 
 _all_done:
