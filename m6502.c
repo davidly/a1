@@ -208,7 +208,6 @@ void op_math( op, rhs ) uint8_t op; uint8_t rhs;
     uint16_t res16;
     uint8_t result;
     uint8_t math;
-
     math = op >> 5;
     if ( 6 == math )
     {
@@ -228,13 +227,7 @@ void op_math( op, rhs ) uint8_t op; uint8_t rhs;
         math = 3;
     }
 
-    if ( 0 == math )
-        cpu.a |= rhs;
-    else if ( 1 == math )
-        cpu.a &= rhs;
-    else if ( 2 == math )
-        cpu.a ^= rhs;
-    else if ( 3 == math )
+    if ( 3 == math )
     {
         res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
         result = res16 & 0xff;
@@ -242,6 +235,12 @@ void op_math( op, rhs ) uint8_t op; uint8_t rhs;
         cpu.fOverflow = ( ! ( ( cpu.a ^ rhs ) & 0x80 ) ) && ( ( cpu.a ^ result ) & 0x80 );
         cpu.a = result;
     }
+    else if ( 0 == math )
+        cpu.a |= rhs;
+    else if ( 1 == math )
+        cpu.a &= rhs;
+    else if ( 2 == math )
+        cpu.a ^= rhs;
 
     set_nz( cpu.a );
 }
@@ -455,10 +454,10 @@ _st_complete:
             case 0xa0: case 0xa2: case 0xa9: { address = cpu.pc + 1; goto _ld_complete; }                      /* ldy/ldx/lda #d8 */
             case 0xa1: { address = get_word( 0xff & ( get_byte( cpu.pc + 1 ) + cpu.x ) ); goto _ld_complete; } /* lda (a8, x ) */
             case 0xa4 : case 0xa5: case  0xa6: { address = get_byte( cpu.pc + 1 ); goto _ld0_complete; }       /* ldy/lda/ldx a8 */
+            case 0xac: case 0xad: case 0xae:{ address = get_word( cpu.pc + 1 ); goto _ld_complete; }           /* ldy/lda/ldx a16 */
             case 0xb1: { address = cpu.y + get_word( (uint16_t) get_byte( cpu.pc + 1 ) ); goto _ld_complete; } /* lda (a8), y */
             case 0xb4: case 0xb5: { address = 0xff & ( get_byte( cpu.pc + 1 ) + cpu.x ); goto _ld0_complete; } /* ldy/lda a8, x */
             case 0xb6: { address = 0xff & ( get_byte( cpu.pc + 1 ) + cpu.y ); goto _ld0_complete; }            /* ldx a8, y */
-            case 0xac: case 0xad: case 0xae:{ address = get_word( cpu.pc + 1 ); goto _ld_complete; }           /* ldy/lda/ldx a16 */
             case 0xb9 : case 0xbe: { address = get_word( cpu.pc + 1 ) + cpu.y; goto _ld_complete; }            /* lda/ldx a16, y */
             case 0xbc: case 0xbd:                                                                              /* ldy/lda a16, x */
             {
@@ -485,8 +484,8 @@ _ld0_complete:  /* load from page 0 */
             case 0xc0: { op_cmp( cpu.y, get_byte( cpu.pc + 1 ) ); break; }             /* cpy #d8 */
             case 0xc4: { op_cmp( cpu.y, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpy a8 */
             case 0xc6 : case 0xe6: { address = get_byte( cpu.pc + 1 ); goto _crement_complete; }         /* inc/dec a8 */
-            case 0xd6 : case 0xf6: { address = cpu.x + get_byte( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a8, x */
             case 0xce : case 0xee: { address = get_word( cpu.pc + 1 ); goto _crement_complete; }         /* inc/dec a16 */
+            case 0xd6 : case 0xf6: { address = cpu.x + get_byte( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a8, x */
             case 0xde : case 0xfe:                                                                       /* inc/dec a16, x */
             {
                 address = cpu.x + get_word( cpu.pc + 1 );
