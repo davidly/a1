@@ -1,26 +1,26 @@
-Fri 12/27/2024 19:07:46.10 
+Tue 12/31/2024  7:16:30.86 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            3,422
-Z80  cycles:            10,493,446,334
+elapsed milliseconds:            2,735
+Z80  cycles:             8,677,431,214
 clock rate:                  unbounded
-approx ms at 4Mhz:           2,623,361 == 0 days, 0 hours, 43 minutes, 43 seconds, 361 milliseconds
+approx ms at 4Mhz:           2,169,357 == 0 days, 0 hours, 36 minutes, 9 seconds, 357 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:            1,000
-Z80  cycles:             2,973,731,851
+elapsed milliseconds:              782
+Z80  cycles:             2,448,985,843
 clock rate:                  unbounded
-approx ms at 4Mhz:             743,432 == 0 days, 0 hours, 12 minutes, 23 seconds, 432 milliseconds
+approx ms at 4Mhz:             612,246 == 0 days, 0 hours, 10 minutes, 12 seconds, 246 milliseconds
 t1 assembly 
 
 195D$
 
-elapsed milliseconds:              327
-Z80  cycles:               992,764,326
+elapsed milliseconds:              251
+Z80  cycles:               793,156,800
 clock rate:                  unbounded
-approx ms at 4Mhz:             248,191 == 0 days, 0 hours, 4 minutes, 8 seconds, 191 milliseconds
+approx ms at 4Mhz:             198,289 == 0 days, 0 hours, 3 minutes, 18 seconds, 289 milliseconds
 6502 functional tests 
 S
 
@@ -46,6 +46,11 @@ E000: 4C
 DONE
 
 >
+
+elapsed milliseconds:            1,675
+Z80  cycles:             5,085,100,825
+clock rate:                  unbounded
+approx ms at 4Mhz:           1,271,275 == 0 days, 0 hours, 21 minutes, 11 seconds, 275 milliseconds
 BASIC hello world 
 \
 E000R
@@ -106,8 +111,8 @@ FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
 
-elapsed milliseconds:           54,020
-Z80  cycles:           163,677,034,253
+elapsed milliseconds:           44,896
+Z80  cycles:           137,504,509,004
 clock rate:                  unbounded
-approx ms at 4Mhz:          40,919,258 == 0 days, 11 hours, 21 minutes, 59 seconds, 258 milliseconds
-Fri 12/27/2024 19:09:11.24 
+approx ms at 4Mhz:          34,376,127 == 0 days, 9 hours, 32 minutes, 56 seconds, 127 milliseconds
+Tue 12/31/2024  7:17:40.37 
