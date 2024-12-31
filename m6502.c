@@ -1,7 +1,5 @@
 /*
    6502 emulator targeted at an 8080 running CP/M 2.2.
-   Some of this code is written strangely to accomodate old compiler quirks.
-     one of the worst: ( uint8_t + uint8_t ) results in uint16_t, so a cast, mask, or local is required for page 0 wrapping.
    Written by David Lee
 */
 
@@ -305,7 +303,7 @@ _loop_start:
             {
                 g_State &= ~stateSoftReset;
                 cpu.pc = get_word( 0xfffc );
-                continue;
+                goto _loop_start;
             }
         }
 
@@ -323,7 +321,7 @@ _loop_start:
                 op_php(); 
                 cpu.fInterruptDisable = true;
                 cpu.pc = get_word( 0xfffe );
-                continue;
+                goto _loop_start;
             }
             case 0x01: case 0x21: case 0x41: case 0x61: case 0xc1: case 0xe1:          /* ora/and/eor/adc/cmp/sbc (a8, x) */
             {
@@ -394,14 +392,14 @@ _rot_complete:
 _branch:
                 /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
                 cpu.pc += ( 2 + sign_extend( get_byte( cpu.pc + 1 ), 7 ) );
-                continue;
+                goto _loop_start;
             }
             case 0x18: { cpu.fCarry = false; break; }                                  /* clc */
             case 0x20:                                                                 /* jsr a16 */
             {
                 push_word( cpu.pc + 2 );
                 cpu.pc = get_word( cpu.pc + 1 );
-                continue;
+                goto _loop_start;
             }
             case 0x24: { op_bit( get_byte( get_byte( cpu.pc + 1 ) ) ); break; }        /* bit a8 NVZ */
             case 0x28: { op_pop_pf(); break; }                                         /* plp NZCIDV */
@@ -412,22 +410,22 @@ _branch:
                 op_pop_pf();
                 cpu.pc = pop();
                 cpu.pc |= ( ( (uint16_t) pop() ) << 8 );
-                continue;
+                goto _loop_start;
             }
             case 0x48: { push( cpu.a ); break; }                                       /* pha */
-            case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); continue; }                  /* jmp a16 */
+            case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); goto _loop_start; }          /* jmp a16 */
             case 0x58: { cpu.fInterruptDisable = false; break; }                       /* cli */
             case 0x60:                                                                 /* rts */
             {
 _op_rts:
                 cpu.pc = pop();
                 cpu.pc = 1 + ( ( (uint16_t) pop() << 8 ) | cpu.pc );
-                continue;
+                goto _loop_start;
             }
-            case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; }                      /* pla NZ */
+            case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; }                                  /* pla NZ */
             case 0x6a: case 0x4a: case 0x2a: case 0x0a: { cpu.a = op_rotate( op, cpu.a ); break; } /* asl, rol, lsr, ror */
-            case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); continue; }      /* jmp (a16) */
-            case 0x78: { cpu.fInterruptDisable = true; break; }                        /* sei */
+            case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); goto _loop_start; }          /* jmp (a16) */
+            case 0x78: { cpu.fInterruptDisable = true; break; }                                    /* sei */
             case 0x81: { address = get_word( (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ) ); goto _st_complete; } /* stx (a8, x) */
             case 0x84: case 0x85: case 0x86: { address = get_byte( cpu.pc + 1 ); goto _st_complete; }             /* sty/sta/stx a8 */
             case 0x8c: case 0x8d: case 0x8e: { address = get_word( cpu.pc + 1 ); goto _st_complete; }             /* sty/sta/stx a16 */
