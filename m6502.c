@@ -278,7 +278,6 @@ char * render_flags()
     ac_flags[ 4 ] = cpu.fZero ? 'Z' : 'z';
     ac_flags[ 5 ] = cpu.fCarry ? 'C' : 'c';
     ac_flags[ 6 ] = 0;
-
     return ac_flags;
 }
 #endif
@@ -328,20 +327,9 @@ void emulate()
                 op_math( op, get_byte( get_word( val ) ) );
                 break;
             }
-            case 0x11: case 0x31: case 0x51: case 0x71: case 0xd1: case 0xf1:          /* ora/and/eor/adc/cmp/sbc (a8), y */
-            {
-                val = get_byte( cpu.pc + 1 ); /* reduce expression complexity for hisoft C by using local */
-                op_math( op, get_byte( cpu.y + get_word( val ) ) );
-                break;
-            }
             case 0x05: case 0x25: case 0x45: case 0x65: case 0xc5: case 0xe5:          /* ora/and/eor/adc/cmp/sbc a8 */
             {
                 op_math( op, get_byte( get_byte( cpu.pc + 1 ) ) );
-                break;
-            }
-            case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5:          /* ora/and/eor/adc/cmp/sbc a8, x */  
-            {
-                op_math( op, get_byte( (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ) ) );
                 break;
             }
             case 0x09: case 0x29: case 0x49: case 0x69: case 0xc9: case 0xe9:          /* ora/and/eor/adc/cmp/sbc #d8 */
@@ -349,14 +337,25 @@ void emulate()
                 op_math( op, get_byte( cpu.pc + 1 ) );
                 break;
             }
-            case 0x19: case 0x39: case 0x59: case 0x79: case 0xd9: case 0xf9:          /* ora/and/eor/adc/cmp/sbc a16, y */
-            {
-                op_math( op, get_byte( get_word( cpu.pc + 1 ) + cpu.y ) );
-                break;
-            }
             case 0x0d: case 0x2d: case 0x4d: case 0x6d: case 0xcd: case 0xed:          /* ora/and/eor/adc/cmp/sbc a16 */
             {
                 op_math( op, get_byte( get_word( cpu.pc + 1 ) ) );
+                break;
+            }
+            case 0x11: case 0x31: case 0x51: case 0x71: case 0xd1: case 0xf1:          /* ora/and/eor/adc/cmp/sbc (a8), y */
+            {
+                val = get_byte( cpu.pc + 1 ); /* reduce expression complexity for hisoft C by using local */
+                op_math( op, get_byte( cpu.y + get_word( val ) ) );
+                break;
+            }
+            case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5:          /* ora/and/eor/adc/cmp/sbc a8, x */  
+            {
+                op_math( op, get_byte( (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ) ) );
+                break;
+            }
+            case 0x19: case 0x39: case 0x59: case 0x79: case 0xd9: case 0xf9:          /* ora/and/eor/adc/cmp/sbc a16, y */
+            {
+                op_math( op, get_byte( get_word( cpu.pc + 1 ) + cpu.y ) );
                 break;
             }
             case 0x1d: case 0x3d: case 0x5d: case 0x7d: case 0xdd: case 0xfd:          /* ora/and/eor/adc/cmp/sbc a16, x */
@@ -365,8 +364,8 @@ void emulate()
                 break;
             }
             case 0x06: case 0x26: case 0x46: case 0x66: { address = get_byte( cpu.pc + 1 ); goto _rot_complete; }             /* asl/rol/lsr/ror a8 */
-            case 0x16: case 0x36: case 0x56: case 0x76: { address = ( cpu.x + get_byte( cpu.pc + 1 ) ); goto _rot_complete; } /* asl/rol/lsr/ror a8, x*/
             case 0x0e: case 0x2e: case 0x4e: case 0x6e: { address = get_word( cpu.pc + 1 ); goto _rot_complete; }             /* asl/rol/lsr/ror a16 */
+            case 0x16: case 0x36: case 0x56: case 0x76: { address = ( cpu.x + get_byte( cpu.pc + 1 ) ); goto _rot_complete; } /* asl/rol/lsr/ror a8, x*/
             case 0x1e: case 0x3e: case 0x5e: case 0x7e:                                                                       /* asl/rol/lsr/ror a16, x */
             {
                 address = cpu.x + get_word( cpu.pc + 1 );

@@ -573,7 +573,7 @@ static bool load_intel( fp ) FILE * fp;
     uint8_t reclen, rectyp, x, val;
     uint16_t offset;
 
-    do
+    for ( ;; )
     {
         buf = fgets( acLine, _countof( acLine), fp );
 
@@ -603,7 +603,7 @@ static bool load_intel( fp ) FILE * fp;
         }
         else
             break;
-    } while ( true );
+    }
 
     fclose( fp );
     return true;
@@ -672,7 +672,7 @@ bool loadFile( filePath ) char * filePath;
                 pnext = pcolon + 1;
                 ok = true;
 
-                do
+                for ( ;; )
                 {
                     while ( ' ' == *pnext )
                         pnext++;
@@ -686,7 +686,6 @@ bool loadFile( filePath ) char * filePath;
                     else
                         break;
                 }
-                while ( true );
             }
         } while ( !feof( fp ) );
 
