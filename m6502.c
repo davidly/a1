@@ -289,9 +289,8 @@ void emulate()
     uint16_t address;
     uint8_t * pb;
 
-    do
+    for (;;) /* most efficient infinite loop for older compilers */
     {
-_loop_start:
         if ( 0 != g_State )
         {
             if ( g_State & stateEndEmulation )
@@ -303,7 +302,7 @@ _loop_start:
             {
                 g_State &= ~stateSoftReset;
                 cpu.pc = get_word( 0xfffc );
-                goto _loop_start;
+                continue;
             }
         }
 
@@ -321,7 +320,7 @@ _loop_start:
                 op_php(); 
                 cpu.fInterruptDisable = true;
                 cpu.pc = get_word( 0xfffe );
-                goto _loop_start;
+                continue;
             }
             case 0x01: case 0x21: case 0x41: case 0x61: case 0xc1: case 0xe1:          /* ora/and/eor/adc/cmp/sbc (a8, x) */
             {
@@ -392,14 +391,14 @@ _rot_complete:
 _branch:
                 /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
                 cpu.pc += ( 2 + sign_extend( get_byte( cpu.pc + 1 ), 7 ) );
-                goto _loop_start;
+                continue;
             }
             case 0x18: { cpu.fCarry = false; break; }                                  /* clc */
             case 0x20:                                                                 /* jsr a16 */
             {
                 push_word( cpu.pc + 2 );
                 cpu.pc = get_word( cpu.pc + 1 );
-                goto _loop_start;
+                continue;
             }
             case 0x24: { op_bit( get_byte( get_byte( cpu.pc + 1 ) ) ); break; }        /* bit a8 NVZ */
             case 0x28: { op_pop_pf(); break; }                                         /* plp NZCIDV */
@@ -410,21 +409,21 @@ _branch:
                 op_pop_pf();
                 cpu.pc = pop();
                 cpu.pc |= ( ( (uint16_t) pop() ) << 8 );
-                goto _loop_start;
+                continue;
             }
             case 0x48: { push( cpu.a ); break; }                                       /* pha */
-            case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); goto _loop_start; }          /* jmp a16 */
+            case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); continue; }                  /* jmp a16 */
             case 0x58: { cpu.fInterruptDisable = false; break; }                       /* cli */
             case 0x60:                                                                 /* rts */
             {
 _op_rts:
                 cpu.pc = pop();
                 cpu.pc = 1 + ( ( (uint16_t) pop() << 8 ) | cpu.pc );
-                goto _loop_start;
+                continue;
             }
             case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; }                                  /* pla NZ */
             case 0x6a: case 0x4a: case 0x2a: case 0x0a: { cpu.a = op_rotate( op, cpu.a ); break; } /* asl, rol, lsr, ror */
-            case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); goto _loop_start; }          /* jmp (a16) */
+            case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); continue; }                  /* jmp (a16) */
             case 0x78: { cpu.fInterruptDisable = true; break; }                                    /* sei */
             case 0x81: { address = get_word( (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ) ); goto _st_complete; } /* stx (a8, x) */
             case 0x84: case 0x85: case 0x86: { address = get_byte( cpu.pc + 1 ); goto _st_complete; }             /* sty/sta/stx a8 */
@@ -460,7 +459,7 @@ _st_complete:
 _ld_complete:   /* load */
                 if ( address >= 0xd010 && address <= 0xd012 )                          /* apple 1 memory-mapped I/O */
                     set_byte( address, m_load( address ) );
-_ld0_complete:  /* load from page 0 */
+_ld0_complete:  /* load from page 0 so no need for memory-mapped I/O check */
                 val = get_byte( address );
                 set_nz( val );
         
@@ -508,8 +507,7 @@ _crement_complete:
         }
 
         cpu.pc += ins_len_6502[ op ];
-        goto _loop_start; /* old C compilers generate code to check if while( true ) is in fact true. goto is faster than continue */
-    } while( true );
+    }
 
 _all_done:
     return;
