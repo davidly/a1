@@ -20,7 +20,6 @@ static bool g_exitOnMonitor = false;
 static FILE * g_loadFile = 0;
 static char kbd_char = 0;
 static bool kbd_available = false;
-static char acLine[ 120 ]; /* shared buffer */
 
 static void usage( err ) char * err;
 {
@@ -339,7 +338,6 @@ void m_halt()
 
 uint8_t m_hook()
 {
-    char c;
     uint16_t address;
     address = cpu.pc;
 
@@ -354,12 +352,8 @@ uint8_t m_hook()
         printf( "%x", 0xf & cpu.a );
     else if ( 0xffef == address )
     {
-        c = cpu.a;
-        if ( 0x0d != c )
-        {
-            c = (char) toupper( c );
-            printf( "%c", c );
-        }
+        if ( 0x0d != cpu.a )
+            printf( "%c", toupper( cpu.a ) );
     }
 
     fflush( stdout );
@@ -375,6 +369,8 @@ void m_hard_exit( perror, val ) char * perror; uint16_t val;
 void load_input_file()
 {
     char * result;
+    char acLine[ 120 ];
+
     printf( "filename to read: " );
     fflush( stdout );
     result = gets( acLine );
@@ -394,7 +390,7 @@ int bdos_kbhit()
     return bdos( 6, 0xff );
 }
 
-char getc_load_file()
+int getc_load_file()
 {
     char c;
 
@@ -572,6 +568,7 @@ static bool load_intel( fp ) FILE * fp;
     char * buf;
     uint8_t reclen, rectyp, x, val;
     uint16_t offset;
+    char acLine[ 120 ];
 
     for ( ;; )
     {
@@ -630,6 +627,7 @@ bool loadFile( filePath ) char * filePath;
     char c, *buf, *pcolon, *pnext;
     uint16_t run_address, a;
     uint8_t b;
+    char acLine[ 120 ];
 
     run_address = 0;
     ok = false;
@@ -715,14 +713,14 @@ void invoke_command( pcFile ) char * pcFile;
 
     if ( g_useHooks )
     {
-        set_byte( 0xff1f, OP_HOOK );
-        set_byte( 0xffdc, OP_HOOK );
-        set_byte( 0xffe5, OP_HOOK );
-        set_byte( 0xffef, OP_HOOK );
+        set_byte( 0xff1f, OP_HOOK );   /* GETLINE monitor entry point */
+        set_byte( 0xffdc, OP_HOOK );   /* PRBYTE. Prints the byte in A as a 2-digit hex number */
+        set_byte( 0xffe5, OP_HOOK );   /* PRHEX. Prints the low nibble in A as hex */
+        set_byte( 0xffef, OP_HOOK );   /* ECHO character in A to the terminal */
     }
 
     if ( g_exitOnMonitor )
-        set_byte( 0xff1f, OP_HALT );
+        set_byte( 0xff1f, OP_HALT );   /* exit the emulator when when an app returns to wozmon */
 
     emulate();
 }
@@ -762,10 +760,7 @@ int main( argc, argv ) int argc; char * argv[];
             {
                 g_loadFile = fopen( parg + 3, "r" );
                 if ( !g_loadFile )
-                {
-                    printf( "unable to open load file specified in '%s'\n", parg );
-                    usage( "invalid command" );
-                }
+                    usage( "unable to load the file specified" );
             }
             else if ( 'x' == lower )
                 g_exitOnMonitor = true;

@@ -1,26 +1,26 @@
-Tue 12/31/2024 15:08:52.33 
+Wed 01/01/2025  8:06:49.08 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            2,726
-Z80  cycles:             8,658,342,938
+elapsed milliseconds:            2,718
+Z80  cycles:             8,658,351,781
 clock rate:                  unbounded
-approx ms at 4Mhz:           2,164,585 == 0 days, 0 hours, 36 minutes, 4 seconds, 585 milliseconds
+approx ms at 4Mhz:           2,164,587 == 0 days, 0 hours, 36 minutes, 4 seconds, 587 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:              778
-Z80  cycles:             2,441,509,341
+elapsed milliseconds:              782
+Z80  cycles:             2,441,518,184
 clock rate:                  unbounded
-approx ms at 4Mhz:             610,377 == 0 days, 0 hours, 10 minutes, 10 seconds, 377 milliseconds
+approx ms at 4Mhz:             610,379 == 0 days, 0 hours, 10 minutes, 10 seconds, 379 milliseconds
 t1 assembly 
 
 195D$
 
-elapsed milliseconds:              249
-Z80  cycles:               790,858,720
+elapsed milliseconds:              248
+Z80  cycles:               790,867,563
 clock rate:                  unbounded
-approx ms at 4Mhz:             197,714 == 0 days, 0 hours, 3 minutes, 17 seconds, 714 milliseconds
+approx ms at 4Mhz:             197,716 == 0 days, 0 hours, 3 minutes, 17 seconds, 716 milliseconds
 6502 functional tests 
 S
 
@@ -47,10 +47,10 @@ DONE
 
 >
 
-elapsed milliseconds:            1,691
-Z80  cycles:             5,071,325,217
+elapsed milliseconds:            1,669
+Z80  cycles:             5,071,331,792
 clock rate:                  unbounded
-approx ms at 4Mhz:           1,267,831 == 0 days, 0 hours, 21 minutes, 7 seconds, 831 milliseconds
+approx ms at 4Mhz:           1,267,832 == 0 days, 0 hours, 21 minutes, 7 seconds, 832 milliseconds
 BASIC hello world 
 \
 E000R
@@ -111,8 +111,8 @@ FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
 
-elapsed milliseconds:           46,065
-Z80  cycles:           137,174,741,412
+elapsed milliseconds:           45,100
+Z80  cycles:           137,174,737,753
 clock rate:                  unbounded
-approx ms at 4Mhz:          34,293,685 == 0 days, 9 hours, 31 minutes, 33 seconds, 685 milliseconds
-Tue 12/31/2024 15:10:03.04 
+approx ms at 4Mhz:          34,293,684 == 0 days, 9 hours, 31 minutes, 33 seconds, 684 milliseconds
+Wed 01/01/2025  8:07:58.80 

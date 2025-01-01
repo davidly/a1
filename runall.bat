@@ -26,7 +26,7 @@ ntvcm a1 -x hello.hex >>%outputfile%
 
 echo digits of e
 echo digits of e >>%outputfile%
-ntvcm a1 -l:e.bas >>%outputfile%
+ntvcm -p a1 -l:e.bas >>%outputfile%
 
 echo BASIC hello world
 echo BASIC hello world >>%outputfile%
