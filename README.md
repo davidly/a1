@@ -49,17 +49,18 @@ The CP/M C compilers can be found here: [CP/M Compilers](https://github.com/davi
 [NTVCM](https://github.com/davidly/cpm_compilers) is an 8080/Z80 CP/M 2.2 emulator that can be used to both compile and run a1.
 
 Notes:
-  - Performance on physical CP/M machines isn't great. When run on a 4Mhz Z80, A1 built with Aztec C is 160x slower than a physical 1Mhz 6502. A1 built with the HI-TECH compiler is 117x slower and requires a Z80. That said, performnce on modern hardware is great.
+  - Performance on physical CP/M machines isn't great. When run on a 4Mhz Z80, A1 built with Aztec C is 165x slower than a physical 1Mhz 6502. A1 built with the HI-TECH compiler is 144x slower and requires a Z80. That said, performnce on modern hardware is great.
   - The Aztec Z80 variant compiler CZ.COM produces slower code than the 8080 CC.COM variant and should be avoided.
-  - When using the HI-TECH compiler, get the [optimizer](https://github.com/nikitinprior/doptim) built for your native platform and run it as shown in mhalt.bat for the best performance. The emulator C code is too large for the native optimizer to run.
+  - When using the HI-TECH compiler, get the [optimizer](https://github.com/nikitinprior/doptim) built for your native platform and run it as shown in mhalt.bat for the best performance. The emulator C code is too large for the Z80 version of the optimizer to run.
   - CP/M machines have at most 64k of RAM, so the Apple 1 machine has less than that:
       - 32K of RAM starting at address 0
-      - 32 bytes for memory-mapped I/O to the keyboard and display at address 0xd000
+      - 21 bytes for memory-mapped I/O to the keyboard and display at address 0xd000
       - 4k Woz BASIC at address 0xe000
       - 256 bytes of Woz Monitor at address 0xff00
   - If a HEX file is specified on the command line, it's loaded prior to the start of emulation
   - If a -l:file input file is specified, it's fed to keyboard input after the start of emulation
   - The -l:file input file can contain control characters including ^c to terminate execution once an app is complete
   - The buid scripts are Windows-based, but all of this works on Linux and MacOS as well. On those platforms be sure input text files have CR/LF using unix2dos.
-  - The Altair 8800 (Z80) simulator V4.0-0 doesn't have enough RAM for a 32K Apple 1. Turn off APPLE1_32K in m6502.c to run a1 in that emulator.
+  - The Altair 8800 (Z80) simulator V4.0-0 doesn't have enough RAM for a 32K Apple 1. Turn off APPLE1_32K in m6502.c to run a1 in that emulator with just 16K of RAM.
+  - Overlays could be used for most of the code in a1.c and the code in m6502.c such that the code for just one or the other is loaded at a time. This would free more RAM for the Apple 1. But I haven't found any Apple 1 apps that actually need it.
   - Why did I make this? Now I can run Steve Wozniak BASIC apps in my 6502 Apple 1 emulator in my 8080/Z80 CP/M emulator in my 8086 DOS emulator in my Arm64 Linux emulator in my RISC-V 64 Linux emulator on any reasonably modern machine and OS.
