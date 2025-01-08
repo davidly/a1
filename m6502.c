@@ -367,7 +367,7 @@ void emulate()
             }
             case 0x06: case 0x26: case 0x46: case 0x66: { address = get_byte( cpu.pc + 1 ); goto _rot_complete; }             /* asl/rol/lsr/ror a8 */
             case 0x0e: case 0x2e: case 0x4e: case 0x6e: { address = get_word( cpu.pc + 1 ); goto _rot_complete; }             /* asl/rol/lsr/ror a16 */
-            case 0x16: case 0x36: case 0x56: case 0x76: { address = ( cpu.x + get_byte( cpu.pc + 1 ) ); goto _rot_complete; } /* asl/rol/lsr/ror a8, x*/
+            case 0x16: case 0x36: case 0x56: case 0x76: { address = ( cpu.x + get_byte( cpu.pc + 1 ) ); goto _rot_complete; } /* asl/rol/lsr/ror a8, x */
             case 0x1e: case 0x3e: case 0x5e: case 0x7e:                                                                       /* asl/rol/lsr/ror a16, x */
             {
                 address = cpu.x + get_word( cpu.pc + 1 );
@@ -376,7 +376,7 @@ _rot_complete:
                 *pb = op_rotate( op, *pb );
                 break;
             }
-            case 0x08: { op_php(); break; }                                            /* php  */
+            case 0x08: { op_php(); break; }                                            /* php */
             case OP_HOOK: { op = m_hook(); goto _op_rts; }                             /* hook */
             case 0x10: { if ( !cpu.fNegative ) goto _branch; break; }                  /* bpl */
             case 0x30: { if ( cpu.fNegative ) goto _branch; break; }                   /* bmi */
