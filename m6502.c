@@ -31,7 +31,7 @@ static uint8_t m_0000[ 0x4000 ];
 static uint8_t m_4000[ 0x4000 ];
 #endif
 
-void * get_mem( address ) uint16_t address;
+uint8_t * get_mem( address ) uint16_t address;
 {
     if ( address < _countof( m_0000 ) ) /* for assembly apps, putting this check first is faster */
         return m_0000 + address;
@@ -143,7 +143,9 @@ uint8_t op_rotate( op, val ) uint8_t op; uint8_t val;
 
 void op_cmp( lhs, rhs ) uint8_t lhs; uint8_t rhs;
 {
-    set_nz( (uint8_t) (uint16_t) lhs - (uint16_t) rhs );
+    uint8_t result;
+    result = (uint8_t) ( (uint16_t) lhs - (uint16_t) rhs );
+    set_nz( result );
     cpu.fCarry = ( lhs >= rhs );
 }
 
@@ -370,7 +372,7 @@ void emulate()
             {
                 address = cpu.x + get_word( cpu.pc + 1 );
 _rot_complete:
-                pb = (uint8_t *) get_mem( address ); /* avoid two calls to get_mem */
+                pb = get_mem( address ); /* avoid two calls to get_mem */
                 *pb = op_rotate( op, *pb );
                 break;
             }
@@ -483,7 +485,7 @@ _ld0_complete:  /* load from page 0 so no need for memory-mapped I/O check */
             {
                 address = cpu.x + get_word( cpu.pc + 1 );
 _crement_complete:
-                pb = (uint8_t *) get_mem( address );
+                pb = get_mem( address );
                 if ( op >= 0xe6 )
                     (*pb)++;
                 else

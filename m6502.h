@@ -29,7 +29,7 @@ extern void emulate();
 extern void end_emulation();
 extern void soft_reset();
 extern void power_on();
-extern void * get_mem();
+extern uint8_t * get_mem();
 
 /* use #define instead of functions because old compilers don't inline functions */
 
@@ -43,7 +43,7 @@ struct MOS_6502
     uint8_t a, x, y, sp;
     uint16_t pc;
     uint8_t pf;   /* NV-BDIZC. State is tracked in bools below and only updated for pf and php */
-    bool fNegative, fOverflow, fUnused, fDecimal, fInterruptDisable, fZero, fCarry;
+    bool fNegative, fOverflow, fDecimal, fInterruptDisable, fZero, fCarry;
 };
 
 extern struct MOS_6502 cpu;
