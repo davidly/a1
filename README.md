@@ -30,6 +30,8 @@ Files:
    - badaddr.txt  test program that references  unavailable RAM
    - runall.bat   runs test apps
    - baseline_test_a1.txt Baseline test results
+   - m.sh         linux build script
+   - runall.sh    linux test script
 
 Usage:
 
@@ -55,6 +57,8 @@ The CP/M C compilers can be found here: [CP/M Compilers](https://github.com/davi
 
 [NTVCM](https://github.com/davidly/cpm_compilers) is an 8080/Z80 CP/M 2.2 emulator that can be used to both compile and run a1.
 
+To build and validate on Linux, use m.sh and runall.sh. Many files need to be renamed or copied to uppercase names. For macOS the uppercase filenames aren't needed.
+
 Notes:
   - Performance on physical CP/M machines isn't great. When run on a 2Mhz 8080, A1 built with Aztec C is 207x slower than a physical 1Mhz 6502. When run on a 4Mhz Z80, A1 built with the HI-TECH compiler is 95x slower than a physical 1Mhz 6502. That said, performnce on modern hardware is great.
   - The Aztec Z80 variant compiler CZ.COM produces slower code than the 8080 CC.COM variant and should be avoided.
@@ -64,6 +68,7 @@ Notes:
       - 21 bytes for memory-mapped I/O to the keyboard and display at address 0xd000
       - 4k Woz BASIC at address 0xe000
       - 256 bytes of Woz Monitor at address 0xff00
+  - CP/M doesn't understand folders, so you need to copy ctype.h, stdio.h, m.lib, and c.lib to the a1 folder for Aztec C and similar files for HI-TECH C.
   - If a HEX file is specified on the command line, it's loaded prior to the start of emulation
   - If a -l:file input file is specified, it's fed to keyboard input after the start of emulation
   - The -l:file input file can contain control characters including ^c to terminate execution once an app is complete
