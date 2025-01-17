@@ -31,6 +31,83 @@ static uint8_t m_0000[ 0x4000 ];
 static uint8_t m_4000[ 0x4000 ];
 #endif
 
+uint8_t * mem_base[ 16 ] =
+{
+    m_0000,                /* 0000 */
+    m_0000,                /* 1000 */
+    m_0000,                /* 2000 */
+    m_0000,                /* 3000 */
+#ifdef APPLE1_32K
+    m_4000 - 0x4000,       /* 4000 */
+    m_4000 - 0x4000,       /* 5000 */
+    m_4000 - 0x4000,       /* 6000 */
+    m_4000 - 0x4000,       /* 7000 */
+#else
+    0,                     /* 4000 */
+    0,                     /* 5000 */
+    0,                     /* 6000 */
+    0,                     /* 7000 */
+#endif
+    0,                     /* 8000 */
+    0,                     /* 9000 */
+    0,                     /* a000 */
+    0,                     /* b000 */
+    0,                     /* c000 */
+    m_d000 - 0xd000,       /* d000 */
+    m_e000 - 0xe000,       /* e000 */
+    m_ff00 - 0xff00        /* f000 */
+};
+
+void bad_address( address ) uint16_t address;
+{
+    printf( "the apple 1 app referenced the invalid address %04x\n", address );
+    exit( 1 );
+}
+
+/* the HITECH version is in getmem.asm */
+#ifdef AZTECCPM
+#asm
+; in C:
+;    uint8_t * get_mem( address ) uint16_t address;
+;    {
+;        uint8_t * base;
+;        base = mem_base[ address >> 12 ];
+;        if ( 0 == ( (uint16_t) base & 0xff00 ) )
+;            bad_address( address );
+;        return base + address;
+;    }
+;uint8_t * get_mem( address ) uint16_t address;
+        PUBLIC get_mem_
+get_mem_:
+        lxi h, 3
+        dad sp
+        mov a, m           ; use the top nibble
+        rrc
+        rrc
+        rrc
+        ani 30             ; just shift 3 times
+        mov l, a
+        mvi h, 0
+        lxi d, mem_base_
+        dad d              ; hl now points to the array entry
+        mov e, m
+        inx h
+        mov d, m           ; DE now has the array entry (base)
+        xra a
+        ora d              ; if D is 0, it's a bad address
+        jz bad_address_    ; address is on the stack. no going back
+        lxi h, 2
+        dad sp
+        mov a, m
+        inx h
+        mov h, m
+        mov l, a           ; hl now has address
+        dad d              ; hl now has base + address
+        ret
+#endasm
+#endif
+
+#if 0 /* this version is more correct, but the assembly versions are much faster */
 uint8_t * get_mem( address ) uint16_t address;
 {
     if ( address < _countof( m_0000 ) ) /* for assembly apps, putting this check first is faster */
@@ -54,6 +131,7 @@ uint8_t * get_mem( address ) uint16_t address;
     exit( 1 );
     return 0; /* avoid compiler warning */
 }
+#endif
 
 #define push( x ) ( * ( (uint8_t *) m_0000 + 0x0100 + cpu.sp-- ) = ( x ) )
 #define push_word( x ) ( * ( (uint16_t *) ( m_0000 + 0x0100 + --cpu.sp ) ) = ( x ) ), cpu.sp--
@@ -68,6 +146,7 @@ void power_on()
     cpu.fInterruptDisable = true;
 }
 
+/* really only need 2 bits per value, but extraction would hurt emulator peformance */
 static uint8_t ins_len_6502[ 256 ] =    /* length of instructions */
 {
     /*00*/ 2, 2, 0, 0, 0, 2, 2, 0,
@@ -447,7 +526,7 @@ _st_complete:
             case 0x98: { cpu.a = cpu.y; set_nz( cpu.a ); break; }                      /* tya */
             case 0x9a: { cpu.sp = cpu.x; break; }                                      /* txs no flags set */
             case 0xa0: case 0xa2: case 0xa9: { address = cpu.pc + 1; goto _ld_complete; }                         /* ldy/ldx/lda #d8 */
-            case 0xa1: { address = get_word( (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.x ) ); goto _ld_complete; } /* lda (a8, x ) */
+            case 0xa1: { address = get_word( (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.x ) ); goto _ld_complete; } /* lda (a8, x) */
             case 0xa4 : case 0xa5: case  0xa6: { address = get_byte( cpu.pc + 1 ); goto _ld0_complete; }          /* ldy/lda/ldx a8 */
             case 0xac: case 0xad: case 0xae:{ address = get_word( cpu.pc + 1 ); goto _ld_complete; }              /* ldy/lda/ldx a16 */
             case 0xb1: { address = cpu.y + get_word( (uint16_t) get_byte( cpu.pc + 1 ) ); goto _ld_complete; }    /* lda (a8), y */
