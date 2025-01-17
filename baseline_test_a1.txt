@@ -1,15 +1,15 @@
-Fri 01/17/2025  7:33:53.43 
+Fri 01/17/2025  7:41:03.66 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            2,105
+elapsed milliseconds:            2,063
 Z80  cycles:             6,659,708,808
 clock rate:                  unbounded
 approx ms at 4Mhz:           1,664,927 == 0 days, 0 hours, 27 minutes, 44 seconds, 927 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:              594
+elapsed milliseconds:              579
 Z80  cycles:             1,840,630,939
 clock rate:                  unbounded
 approx ms at 4Mhz:             460,157 == 0 days, 0 hours, 7 minutes, 40 seconds, 157 milliseconds
@@ -17,7 +17,7 @@ t1 assembly
 
 195D$
 
-elapsed milliseconds:              202
+elapsed milliseconds:              201
 Z80  cycles:               636,927,470
 clock rate:                  unbounded
 approx ms at 4Mhz:             159,231 == 0 days, 0 hours, 2 minutes, 39 seconds, 231 milliseconds
@@ -47,7 +47,7 @@ DONE
 
 >
 
-elapsed milliseconds:            1,030
+elapsed milliseconds:            1,047
 Z80  cycles:             3,211,721,629
 clock rate:                  unbounded
 approx ms at 4Mhz:             802,930 == 0 days, 0 hours, 13 minutes, 22 seconds, 930 milliseconds
@@ -111,20 +111,20 @@ FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
 
-elapsed milliseconds:           27,654
+elapsed milliseconds:           27,422
 Z80  cycles:            86,406,556,020
 clock rate:                  unbounded
 approx ms at 4Mhz:          21,601,639 == 0 days, 6 hours, 0 minutes, 1 seconds, 639 milliseconds
-invalid memory access basic test (0xc000) 
+invalid memory access basic test 0xc000 
 \
 E000R
 
 E000: 4C
 >POKE -16384, 0
 the apple 1 app referenced the invalid address c000
-invalid memory access monitor test (0xc000) 
+invalid memory access monitor test 0xc000 
 \
 C000:0
 
 C000: the apple 1 app referenced the invalid address c000
-Fri 01/17/2025  7:34:41.31 
+Fri 01/17/2025  7:41:51.27 
