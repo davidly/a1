@@ -3,7 +3,7 @@
 ;    {
 ;        uint8_t * base;
 ;        base = mem_base[ address >> 12 ];
-;        if ( 0 == ( (uint16_t) base & 0xff00 ) )
+;        if ( 0 == base )
 ;            bad_address( address );
 ;        return base + address;
 ;    }
@@ -32,11 +32,11 @@ _get_mem:
     ld       d, (hl)            ; de now has the array entry value
     ld       l, (ix)            ; load the address argument
     ld       h, (ix + 1)
-    xor      a
-    or       d
+    ld       a, d		; is the array entry 0?
+    or       e
     jp       nz, _good_address  ; but only if it's valid
     push     hl
-    call     _bad_address	; never going back
+    call     _bad_address       ; never going back
   _good_address:
     add      hl, de             ; add array entry to address argument
     pop      ix

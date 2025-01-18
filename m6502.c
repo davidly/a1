@@ -72,7 +72,7 @@ void bad_address( address ) uint16_t address;
 ;    {
 ;        uint8_t * base;
 ;        base = mem_base[ address >> 12 ];
-;        if ( 0 == ( (uint16_t) base & 0xff00 ) )
+;        if ( 0 == base )
 ;            bad_address( address );
 ;        return base + address;
 ;    }
@@ -93,8 +93,8 @@ get_mem_:
         mov e, m
         inx h
         mov d, m           ; DE now has the array entry (base)
-        xra a
-        ora d              ; if D is 0, it's a bad address
+        mov a, d
+        ora e              ; if DE is 0, it's a bad address
         jz bad_address_    ; address is on the stack. no going back
         lxi h, 2
         dad sp
@@ -133,6 +133,7 @@ uint8_t * get_mem( address ) uint16_t address;
 }
 #endif
 
+/* I wish these were inline functions but old C compilers can't do that */
 #define push( x ) ( * ( (uint8_t *) m_0000 + 0x0100 + cpu.sp-- ) = ( x ) )
 #define push_word( x ) ( * ( (uint16_t *) ( m_0000 + 0x0100 + --cpu.sp ) ) = ( x ) ), cpu.sp--
 #define pop() ( * ( (uint8_t *) m_0000 + 0x0100 + ++cpu.sp ) )
@@ -371,21 +372,6 @@ void emulate()
 
     for (;;) /* most efficient infinite loop for older compilers */
     {
-        if ( 0 != g_State )
-        {
-            if ( g_State & stateEndEmulation )
-            {
-                g_State &= ~stateEndEmulation;
-                break;
-            }
-            else if ( g_State & stateSoftReset )
-            {
-                g_State &= ~stateSoftReset;
-                cpu.pc = get_word( 0xfffc );
-                continue;
-            }
-        }
-
         op = get_byte( cpu.pc );
 
 #ifndef NDEBUG
@@ -456,19 +442,25 @@ _rot_complete:
                 break;
             }
             case 0x08: { op_php(); break; }                                            /* php */
-            case OP_HOOK: { op = m_hook(); goto _op_rts; }                             /* hook */
-            case 0x10: { if ( !cpu.fNegative ) goto _branch; break; }                  /* bpl */
-            case 0x30: { if ( cpu.fNegative ) goto _branch; break; }                   /* bmi */
-            case 0x50: { if ( !cpu.fOverflow ) goto _branch; break; }                  /* bvc */
-            case 0x70: { if ( cpu.fOverflow ) goto _branch; break; }                   /* bvs */
-            case 0x90: { if ( !cpu.fCarry ) goto _branch; break; }                     /* bcc */
-            case 0xb0: { if ( cpu.fCarry ) goto _branch; break; }                      /* bcs */
-            case 0xd0: { if ( !cpu.fZero ) goto _branch; break; }                      /* bne */
+            case OP_HOOK:                                                              /* hook */
+            {
+                op = m_hook();
+                if ( 0 != g_State )
+                    goto _gstate_set;
+                goto _op_rts;
+            }                             
+            case 0x10: { if ( !cpu.fNegative ) goto _branch_complete; break; }         /* bpl */
+            case 0x30: { if ( cpu.fNegative ) goto _branch_complete; break; }          /* bmi */
+            case 0x50: { if ( !cpu.fOverflow ) goto _branch_complete; break; }         /* bvc */
+            case 0x70: { if ( cpu.fOverflow ) goto _branch_complete; break; }          /* bvs */
+            case 0x90: { if ( !cpu.fCarry ) goto _branch_complete; break; }            /* bcc */
+            case 0xb0: { if ( cpu.fCarry ) goto _branch_complete; break; }             /* bcs */
+            case 0xd0: { if ( !cpu.fZero ) goto _branch_complete; break; }             /* bne */
             case 0xf0:                                                                 /* beq */
             {
                 if ( !cpu.fZero )
                     break;                                               
-_branch:
+_branch_complete:
                 /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
                 cpu.pc += ( 2 + sign_extend( get_byte( cpu.pc + 1 ), 7 ) );
                 continue;
@@ -538,7 +530,20 @@ _st_complete:
                 address = get_word( cpu.pc + 1 ) + cpu.x;             
 _ld_complete:   /* load */
                 if ( address >= 0xd010 && address <= 0xd012 )                          /* apple 1 memory-mapped I/O */
+                {
                     set_byte( address, m_load( address ) );
+_gstate_set:
+                    if ( g_State & stateEndEmulation )
+                        goto _all_done;
+
+                    if ( g_State & stateSoftReset )
+                    {
+                        g_State &= ~stateSoftReset;
+                        cpu.pc = get_word( 0xfffc );
+                        continue;
+                    }
+                }
+
 _ld0_complete:  /* load from page 0 so no need for memory-mapped I/O check */
                 val = get_byte( address );
                 set_nz( val );
