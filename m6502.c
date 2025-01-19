@@ -104,6 +104,34 @@ get_mem_:
         mov l, a           ; hl now has address
         dad d              ; hl now has base + address
         ret
+
+; in C:
+;    void xset_nz( x ) uint8_t x;
+;    {
+;        cpu.fNegative = !! ( x & 0x80 );
+;        cpu.fZero = !x;
+;    }
+;void set_nz( x ) uint8_t x;
+        PUBLIC set_nz_
+set_nz_:
+        lxi h, 2
+        dad sp
+        mov a, m
+        cpi 0
+        jnz _nz_set_nz
+        sta cpu_ + 7      ; set negative flag to false
+        inr a             
+        sta cpu_ + 11     ; set zero flag to true
+        ret
+  _nz_set_nz:
+        ani 128
+        jz _pos_set_nz
+        inr a
+  _pos_set_nz:
+        sta cpu_ + 7      ; set negative flag
+        xra a
+        sta cpu_ + 11     ; set zero flag to true
+        ret
 #endasm
 #endif
 
@@ -138,8 +166,11 @@ uint8_t * get_mem( address ) uint16_t address;
 #define push_word( x ) ( * ( (uint16_t *) ( m_0000 + 0x0100 + --cpu.sp ) ) = ( x ) ), cpu.sp--
 #define pop() ( * ( (uint8_t *) m_0000 + 0x0100 + ++cpu.sp ) )
 
+/* For Aztec, it's faster to use the assembly version above. For HISOFT, it's faster to use this macro */
+#ifdef HISOFTCPM
 /* Aztec C generates better code for !! than 0 !=. There is no difference for HI-TECH C */
 #define set_nz( x ) cpu.fNegative = ( !! ( ( x ) & 0x80 ) ), cpu.fZero = ! ( x )
+#endif
 
 void power_on()
 {

@@ -1,3 +1,10 @@
+; these two are defined in m6502.c
+global _bad_address
+global _mem_base
+global _cpu
+
+psect text
+
 ; in C:
 ;    uint8_t * get_mem( address ) uint16_t address;
 ;    {
@@ -8,11 +15,6 @@
 ;        return base + address;
 ;    }
 
-; these two are defined in m6502.c
-global _bad_address
-global _mem_base
-
-psect text
 global _get_mem
 _get_mem:
     push     ix                 ; save ix for the caller
@@ -32,7 +34,7 @@ _get_mem:
     ld       d, (hl)            ; de now has the array entry value
     ld       l, (ix)            ; load the address argument
     ld       h, (ix + 1)
-    ld       a, d		; is the array entry 0?
+    ld       a, d               ; is the array entry 0?
     or       e
     jp       nz, _good_address  ; but only if it's valid
     push     hl
@@ -41,4 +43,35 @@ _get_mem:
     add      hl, de             ; add array entry to address argument
     pop      ix
     ret
+
+; in C:
+;    void xset_nz( x ) uint8_t x;
+;    {
+;        cpu.fNegative = !! ( x & 0x80 );
+;        cpu.fZero = !x;
+;    }
+
+; using the macro in m6502 is faster than calling this function for HI-SOFT C
+; global _set_nz
+; _set_nz:
+;     push     ix                 ; save ix for the caller
+;     ld       ix, 4
+;     add      ix, sp             ; the local variable is pointed to by ix
+;     ld       a, (ix)            ; get x into register a
+;     cp       0
+;     jp       nz, _nz_set_nz
+;     ld       (_cpu + 7), a
+;     inc      a
+;     jp       _exit_set_nz
+;   _nz_set_nz:
+;     and      128
+;     jp       z, _pos_set_nz
+;     inc      a
+;   _pos_set_nz:
+;     ld       (_cpu + 7), a
+;     xor      a
+;   _exit_set_nz:
+;     ld       (_cpu + 11), a
+;     pop      ix
+;     ret
 
