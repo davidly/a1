@@ -1,26 +1,26 @@
-Sat 01/18/2025  6:54:45.23 
+Sat 01/18/2025 16:39:03.98 
 tttaztec 
 !function pointers195D$
 
-elapsed milliseconds:            2,082
-Z80  cycles:             6,441,853,877
+elapsed milliseconds:            2,021
+Z80  cycles:             6,367,137,134
 clock rate:                  unbounded
-approx ms at 4Mhz:           1,610,463 == 0 days, 0 hours, 26 minutes, 50 seconds, 463 milliseconds
+approx ms at 4Mhz:           1,591,784 == 0 days, 0 hours, 26 minutes, 31 seconds, 784 milliseconds
 tttcc65 
  moves 195D, 0001, winner2$
 
-elapsed milliseconds:              589
-Z80  cycles:             1,768,679,753
+elapsed milliseconds:              564
+Z80  cycles:             1,747,178,725
 clock rate:                  unbounded
-approx ms at 4Mhz:             442,169 == 0 days, 0 hours, 7 minutes, 22 seconds, 169 milliseconds
+approx ms at 4Mhz:             436,794 == 0 days, 0 hours, 7 minutes, 16 seconds, 794 milliseconds
 t1 assembly 
 
 195D$
 
-elapsed milliseconds:              198
-Z80  cycles:               604,859,676
+elapsed milliseconds:              192
+Z80  cycles:               596,596,654
 clock rate:                  unbounded
-approx ms at 4Mhz:             151,214 == 0 days, 0 hours, 2 minutes, 31 seconds, 214 milliseconds
+approx ms at 4Mhz:             149,149 == 0 days, 0 hours, 2 minutes, 29 seconds, 149 milliseconds
 6502 functional tests 
 S
 
@@ -47,10 +47,10 @@ DONE
 
 >
 
-elapsed milliseconds:            1,025
-Z80  cycles:             3,146,525,963
+elapsed milliseconds:            1,073
+Z80  cycles:             3,106,767,396
 clock rate:                  unbounded
-approx ms at 4Mhz:             786,631 == 0 days, 0 hours, 13 minutes, 6 seconds, 631 milliseconds
+approx ms at 4Mhz:             776,691 == 0 days, 0 hours, 12 minutes, 56 seconds, 691 milliseconds
 BASIC hello world 
 \
 E000R
@@ -111,10 +111,10 @@ FINAL MOVE COUNT (6493 OR 1903 EXPECTED): 1903$
 
 >
 
-elapsed milliseconds:           27,591
-Z80  cycles:            84,682,008,800
+elapsed milliseconds:           27,611
+Z80  cycles:            83,680,394,179
 clock rate:                  unbounded
-approx ms at 4Mhz:          21,170,502 == 0 days, 5 hours, 52 minutes, 50 seconds, 502 milliseconds
+approx ms at 4Mhz:          20,920,098 == 0 days, 5 hours, 48 minutes, 40 seconds, 98 milliseconds
 invalid memory access basic test 0xc000 
 \
 E000R
@@ -127,4 +127,4 @@ invalid memory access monitor test 0xc000
 C000:0
 
 C000: the apple 1 app referenced the invalid address c000
-Sat 01/18/2025  6:55:33.25 
+Sat 01/18/2025 16:39:51.92 
