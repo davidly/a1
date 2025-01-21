@@ -18,7 +18,7 @@ ntvcm -p a1 -x t1.hex >>%outputfile%
 
 echo 6502 functional test
 echo 6502 functional tests >>%outputfile%
-ntvcm .\a1 -a:400 -h 6502fun.hex >>%outputfile%
+ntvcm -p .\a1 -a:400 -h 6502fun.hex >>%outputfile%
 
 echo hello world
 echo hello world >>%outputfile%
@@ -43,6 +43,22 @@ ntvcm a1 -l:badaddr.bas >>%outputfile%
 echo invalid memory access monitor test 0xc000
 echo invalid memory access monitor test 0xc000 >>%outputfile%
 ntvcm a1 -l:badaddr.txt >>%outputfile%
+
+echo e aztec
+echo e aztec >>%outputfile%
+ntvcm -p a1 -a:0x1030 -x eaztec.hex >>%outputfile%
+
+echo e cc65
+echo e cc65 >>%outputfile%
+ntvcm -p a1 -x ecc65.hex >>%outputfile%
+
+echo sieve aztec
+echo sieve aztec >>%outputfile%
+ntvcm -p a1 -a:0x1030 -x sieveaz.hex >>%outputfile%
+
+echo sieve cc65
+echo sieve cc65 >>%outputfile%
+ntvcm -p a1 -x sievec65.hex >>%outputfile%
 
 echo %date% %time% >>%outputfile%
 diff baseline_%outputfile% %outputfile%
