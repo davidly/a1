@@ -2,6 +2,7 @@
 
 del a1.o 2>nul
 del m6502.o 2>nul
+del a1begin.o 2>nul
 del a1.com 2>nul
 
 ntvcm ..\ntvcm\aztec\cc -DNDEBUG -DAZTECCPM -Q -T -F a1.c
