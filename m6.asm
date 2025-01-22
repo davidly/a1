@@ -1,6 +1,7 @@
 ; n.b. This file was originally m6502.c by Aztec C v1.06.
 ; Then it had many hand-edit optimizations (mostly deletes).
 ; It can't be recreated with a compiler without losing edits.
+; Uncomment debugging lines to get instruction tracing printed to stdout.
 ;
 ; struct MOS_6502
 ; {
@@ -60,7 +61,7 @@ soft_res_:
 
 ;static uint8_t m_0000[ 0x4000 ];
         bss     m_0000_,16384
-;
+; get rid of this one and set to 0 in the table below for a 16k machine
 ;static uint8_t m_4000[ 0x4000 ];
         bss     m_4000_,16384
 ;uint8_t * mem_base[ 16 ] =
@@ -83,7 +84,7 @@ mem_base_:
         DW 0                ; c000
         DW m_d000_+12288    ; d000
         DW m_e000_+8192     ; e000
-        DW m_ff00_+256      ; f000
+        DW m_ff00_+256      ; f000  ; f000-ff00 not handled
         CSEG
 ;
 ;void bad_address( address ) uint16_t address;
@@ -91,28 +92,20 @@ mem_base_:
 bad_addr_:
 ;{
 ;    printf( "the apple 1 app referenced the invalid address %04x\n", address );
-        LXI H,2
-        DAD SP
-        MOV E,M
-        INX H
-        MOV D,M
-        PUSH D
-        LXI H,.bad_addr_err
-        PUSH H
-        CALL printf_
-        POP D
-        POP D
+        lxi h, 2
+        dad sp
+        mov e, m
+        inx h
+        mov d, m
+        push d
+        lxi h, .bad_addr_err
+        push h
+        call printf_
+        pop d
+        pop d
 ;    exit( 1 );
-        LXI H,1
-        PUSH H
-        CALL exit_
+        jmp exit_  ; cp/m apps don't have exit codes. exit doesn't return
 
-.bad_addr_err:
-        DB 116,104,101,32,97,112,112,108,101,32,49,32,97,112,112
-        DB 32,114,101,102,101,114,101,110,99,101,100,32,116,104,101
-        DB 32,105,110,118,97,108,105,100,32,97,100,100,114,101,115
-        DB 115,32,37,48,52,120,10,0
-;
 ; in C:
 ;    uint8_t * get_mem( address ) uint16_t address;
 ;    {
@@ -122,7 +115,7 @@ bad_addr_:
 ;            bad_address( address );
 ;        return base + address;
 ;    }
-; this version has address on the stack
+; this version has address on the stack and is called from a1.c
         PUBLIC get_mem_
 get_mem_:
         lxi h, 3
@@ -131,7 +124,7 @@ get_mem_:
         rrc
         rrc
         rrc
-        ani 30             ; just shift 3 times
+        ani 1eh            ; just shift 3 times and mask
         mov l, a
         mvi h, 0
         lxi d, mem_base_
@@ -141,7 +134,7 @@ get_mem_:
         mov d, m           ; DE now has the array entry (base)
         mov a, d
         ora e              ; if DE is 0, it's a bad address
-        jz bad_address_
+        jz bad_address_    ; jmp not call
         lxi h, 2
         dad sp
         mov a, m
@@ -151,7 +144,7 @@ get_mem_:
         dad d              ; hl now has base + address
         ret
 
-; this version has address in HL
+; this version has address in HL and is called from this file
         PUBLIC get_hmem_
 get_hmem_:
         push h
@@ -159,7 +152,7 @@ get_hmem_:
         rrc
         rrc
         rrc
-        ani 30             ; just shift 3 times
+        ani 1eh            ; just shift 3 times and mask
         mov l, a
         mvi h, 0
         lxi d, mem_base_
@@ -167,9 +160,9 @@ get_hmem_:
         mov e, m
         inx h
         mov d, m           ; DE now has the array entry (base)
-        mov a, d
-        ora e              ; if DE is 0, it's a bad address
-        cz bad_address_    ; call not jmp; it's on the stack
+;        mov a, d           ; these 3 instructions take 5% of app runtime. worth it?
+;        ora e              ; if DE is 0, it's a bad address
+;        cz bad_address_    ; call not jmp; address is on the stack
         pop h
         dad d              ; hl now has base + address
         ret
@@ -180,27 +173,7 @@ get_hmem_:
 ;        cpu.fNegative = !! ( x & 0x80 );
 ;        cpu.fZero = !x;
 ;    }
-        PUBLIC set_nz_
-set_nz_:
-        lxi h, 2
-        dad sp
-        mov a, m
-        cpi 0
-        jnz _nz_set_nz
-        sta .cpu.fNegative  ; set negative flag to false
-        inr a             
-        sta .cpu.fZero      ; set zero flag to true
-        ret
-  _nz_set_nz:
-        ani 128
-        jz _pos_set_nz
-        inr a
-  _pos_set_nz:
-        sta .cpu.fNegative  ; set negative flag
-        xra a
-        sta .cpu.fZero      ; set zero flag to true
-        ret
-
+; except that x is passed in the a register, not on the stack
         PUBLIC aset_nz_
 aset_nz_:
         cpi 0
@@ -821,7 +794,7 @@ op_math_:
         dad d
         shld .om_res16
 ;        result = (uint8_t) res16; /* cast generates faster code for Aztec than & 0xff */
-        mov a,l
+        mov a, l
         sta .om_result
 ;        cpu.fCarry = ( 0 != ( res16 & 0xff00 ) );
         lhld .om_res16
@@ -1103,6 +1076,11 @@ op_php_:
 emulate_:
 ;    uint8_t op, val;
         bss     .op,1
+
+     mvi c, 0b9h
+     mvi d, 1
+     call 5
+
 ;
 ;    for (;;)
 ;    {
@@ -1186,11 +1164,11 @@ emulate_:
         mvi a, 1
         sta .cpu.fInterruptDisble
 ;                cpu.pc = get_word( 0xfffe );
-        lxi h,-2
+        lxi h, -2
         call get_hmem_
-        mov e,m
+        mov e, m
         inx h
-        mov d,m
+        mov d, m
         xchg
         shld .cpu.pc
 ;                continue;
@@ -1641,65 +1619,48 @@ emulate_:
         mov a, m
         call op_bit_
         jmp .next_pc
-;            case 0x38: { cpu.fCarry = true; break; }                  /* sec */
+; case 0x38: { cpu.fCarry = true; break; }                  /* sec */
 .177:
         mvi a, 1
         sta .cpu.fCarry
         jmp .next_pc
-;            case 0x40:                                                /* rti */
+; case 0x40:                                                /* rti */
 .178:
 ;            {
 ;                op_pop_pf();
-        call op_pop_p_
+        call op_pop_pf
 ;                cpu.pc = pop();
-        lda .cpu.sp
-        inr a
-        sta .cpu.sp
-        mov l, a
-        mvi h,0
-        lxi d, m_0000_+256
-        dad d
-        mov e, m
-        mvi d,0
-        xchg
-        shld .cpu.pc
 ;                cpu.pc |= ( ( (uint16_t) pop() ) << 8 );
         lda .cpu.sp
         inr a
-        sta .cpu.sp
         mov l, a
         mvi h, 0
         lxi d, m_0000_+256
         dad d
         mov e, m
-        mvi d,0
-        lxi h, 8
-        call .ls
-        xchg
-        lhld .cpu.pc
-        call .or
+        inx h
+        mov d, m
+        inr a
+        sta .cpu.sp
+        mov h, d
+        mov l, e
         shld .cpu.pc
 ;                continue;
         jmp .gothl_loop
 ;            }
 ; case 0x48: { push( cpu.a ); break; }                      /* pha */
 .179:
-        lda .cpu.a
-        mov l, a
-        push h
-        lda .cpu.sp
-        mov l, a
-        dcx h
-        mov a, l
-        sta .cpu.sp
-        inx h
-        mvi h,0
-        lxi d, m_0000_+256
-        dad d
-        pop d
-        mov m, e
-        jmp .next_pc
-;            case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); continue; } /* jmp a16 */
+         lda .cpu.sp
+         lxi d, m_0000_+256
+         mov l, a
+         dcr a
+         sta .cpu.sp
+         mvi h, 0
+         dad d
+         lda .cpu.a
+         mov m, a
+         jmp .next_pc
+; case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); continue; } /* jmp a16 */
 .180:
         lhld .cpu.pc
         inx h
@@ -2385,44 +2346,9 @@ emulate_:
         push h
         lxi h, .unk_op
         push h
-        call m_hard_e_
-        pop d
-        pop d
+        call m_hard_e_  ; no coming back from this
 ;        }
         jmp .next_pc
-.jump_table:
-        DW  .93,  .94, .268, .268, .268, .100, .142, .268
-        DW .159, .106, .187, .268, .268, .112, .147, .160
-        DW .163, .118, .268, .268, .268, .124, .151, .268
-        DW .172, .130, .268, .268, .268, .136, .155, .268
-        DW .173,  .95, .268, .268, .174, .101, .143, .268
-        DW .175, .107, .186, .268, .176, .113, .148, .268
-        DW .165, .119, .268, .268, .268, .125, .152, .268
-        DW .177, .131, .268, .268, .268, .137, .156, .268
-        DW .178,  .96, .268, .268, .268, .102, .144, .268
-        DW .179, .108, .185, .268, .180, .114, .149, .268
-        DW .166, .120, .268, .268, .268, .126, .153, .268
-        DW .181, .132, .268, .268, .268, .138, .157, .268
-        DW .182,  .97, .268, .268, .268, .103, .145, .268
-        DW .183, .109, .184, .268, .188, .115, .150, .268
-        DW .167, .121, .268, .268, .268, .127, .154, .268
-        DW .189, .133, .268, .268, .268, .139, .158, .268
-        DW .268, .190, .268, .268, .192, .193, .194, .268
-        DW .209, .268, .210, .268, .195, .196, .197, .268
-        DW .168, .198, .268, .268, .199, .200, .201, .268
-        DW .211, .202, .212, .268, .268, .203, .268, .268
-        DW .213, .217, .214, .268, .218, .219, .220, .268
-        DW .240, .215, .241, .268, .222, .223, .224, .268
-        DW .169, .225, .268, .268, .226, .227, .228, .268
-        DW .242, .229, .243, .268, .231, .232, .230, .268
-        DW .244,  .98, .268, .268, .245, .104, .246, .268
-        DW .257, .110, .258, .268, .259, .116, .249, .268
-        DW .170, .122, .268, .268, .268, .128, .251, .268
-        DW .260, .134, .268, .268, .268, .140, .253, .268
-        DW .261,  .99, .268, .268, .262, .105, .247, .268
-        DW .263, .111, .264, .268, .265, .117, .250, .268
-        DW .171, .123, .268, .268, .268, .129, .252, .268
-        DW .266, .135, .268, .268, .268, .141, .254, .267
 .next_pc:
 ;        cpu.pc += ins_len_6502[ op ];
         lda .op
@@ -2443,20 +2369,59 @@ emulate_:
 ;    return;
         ret
 ;}
+
+.jump_table:
+        DW  .93,  .94, .268, .268, .268, .100, .142, .268   ; 00
+        DW .159, .106, .187, .268, .268, .112, .147, .160   ; 08
+        DW .163, .118, .268, .268, .268, .124, .151, .268   ; 10
+        DW .172, .130, .268, .268, .268, .136, .155, .268   ; 18
+        DW .173,  .95, .268, .268, .174, .101, .143, .268   ; 20
+        DW .175, .107, .186, .268, .176, .113, .148, .268   ; 28
+        DW .165, .119, .268, .268, .268, .125, .152, .268   ; 30
+        DW .177, .131, .268, .268, .268, .137, .156, .268   ; 38
+        DW .178,  .96, .268, .268, .268, .102, .144, .268   ; 40
+        DW .179, .108, .185, .268, .180, .114, .149, .268   ; 48
+        DW .166, .120, .268, .268, .268, .126, .153, .268   ; 50
+        DW .181, .132, .268, .268, .268, .138, .157, .268   ; 58
+        DW .182,  .97, .268, .268, .268, .103, .145, .268   ; 60
+        DW .183, .109, .184, .268, .188, .115, .150, .268   ; 68
+        DW .167, .121, .268, .268, .268, .127, .154, .268   ; 70
+        DW .189, .133, .268, .268, .268, .139, .158, .268   ; 78
+        DW .268, .190, .268, .268, .192, .193, .194, .268   ; 80
+        DW .209, .268, .210, .268, .195, .196, .197, .268   ; 88
+        DW .168, .198, .268, .268, .199, .200, .201, .268   ; 90
+        DW .211, .202, .212, .268, .268, .203, .268, .268   ; 98
+        DW .213, .217, .214, .268, .218, .219, .220, .268   ; a0
+        DW .240, .215, .241, .268, .222, .223, .224, .268   ; a8
+        DW .169, .225, .268, .268, .226, .227, .228, .268   ; b0
+        DW .242, .229, .243, .268, .231, .232, .230, .268   ; b8
+        DW .244,  .98, .268, .268, .245, .104, .246, .268   ; c0
+        DW .257, .110, .258, .268, .259, .116, .249, .268   ; c8
+        DW .170, .122, .268, .268, .268, .128, .251, .268   ; d0
+        DW .260, .134, .268, .268, .268, .140, .253, .268   ; d8
+        DW .261,  .99, .268, .268, .262, .105, .247, .268   ; e0
+        DW .263, .111, .264, .268, .265, .117, .250, .268   ; e8
+        DW .171, .123, .268, .268, .268, .129, .252, .268   ; f0
+        DW .266, .135, .268, .268, .268, .141, .254, .267   ; f8
+
 .unk_op:
-        DB 117,110,107,110,111,119,110,32,109,111,115,54,53,48,50
-        DB 32,111,112,99,111,100,101,32,37,48,50,120,10,0
+        DB 'u', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'm', 'o', 's', '6', '5', '0', '2'
+        DB ' ', 'o', 'p', 'c', 'o', 'd', 'e', ' ', '%', '0', '2', 'x', 10, 0
 
-.trc_str:
-        DB 112,99,32,37,48,52,120,44,32,111,112,32,37,48,50
-        DB 120,44,32,97,32,37,48,50,120,44,32,120,32,37,48
-        DB 50,120,44,32,121,32,37,48,50,120,44,32,115,112,32
-        DB 37,48,50,120,44,32,37,115,10,0,117,110,107,110,111
-        DB 119,110,32,109,111,115,54,53,48,50,32,111,112,99,111
-        DB 100,101,32,37,48,50,120,10,0
+.bad_addr_err:
+        DB 't', 'h', 'e', ' ', 'a', 'p', 'p', 'l', 'e', ' ', '1', ' '
+        DB 'a', 'p', 'p', ' ', 'r', 'e', 'f', 'e', 'r', 'e', 'n', 'c', 'e', 'd', ' '
+        DB 't', 'h', 'e', ' ', 'i', 'n', 'v', 'a', 'l', 'i', 'd', ' '
+        DB 'a', 'd', 'd', 'r', 'e', 's', 's', ' ', '%', '0', '4', 'x', 10, 0
 
-;
-        extrn   set_nz_
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
+;.trc_str:
+;        DB 'p', 'c', ' ', '%', '0', '4', 'x', ',', ' ', 'o', 'p', ' '
+;        DB '%', '0', '2', 'x', ',', ' ', 'a', ' ', '%', '0', '2', 'x', ',', ' '
+;        DB 'x', ' ', '%', '0', '2', 'x', ',', ' ', 'y', ' ', '%', '0', '2', 'x', ',', ' '
+;        DB 's', 'p', ' ', '%', '0', '2', 'x', ',', ' ', '%', 's', 10, 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
+
         extrn   exit_
         extrn   printf_
         extrn   m_hard_e_

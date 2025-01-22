@@ -36,13 +36,14 @@ echo BASIC tic-tac-toe first move
 echo BASIC tic-tac-toe first move >>%outputfile%
 ntvcm -p a1 -l:ttt1st.bas >>%outputfile%
 
-echo invalid memory access basic test 0xc000
-echo invalid memory access basic test 0xc000 >>%outputfile%
-ntvcm a1 -l:badaddr.bas >>%outputfile%
-
-echo invalid memory access monitor test 0xc000
-echo invalid memory access monitor test 0xc000 >>%outputfile%
-ntvcm a1 -l:badaddr.txt >>%outputfile%
+rem I mean, real Apple 1 machines didn't have memory protection :)
+rem echo invalid memory access basic test 0xc000
+rem echo invalid memory access basic test 0xc000 >>%outputfile%
+rem ntvcm a1 -l:badaddr.bas >>%outputfile%
+rem 
+rem echo invalid memory access monitor test 0xc000
+rem echo invalid memory access monitor test 0xc000 >>%outputfile%
+rem ntvcm a1 -l:badaddr.txt >>%outputfile%
 
 echo e aztec
 echo e aztec >>%outputfile%
