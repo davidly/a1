@@ -420,7 +420,8 @@ op_bit_:
         sta .cpu.fZero
         ret
 
-; this compiler-generated implementation is big and slow but rarely gets called so I didn't optimize it.
+; this compiler-generated implementation is big and slow but rarely gets called,
+; so I didn't optimize it much.
 ;void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
         PUBLIC op_bcd_m_
 op_bcd_m_:
@@ -448,66 +449,46 @@ op_bcd_m_:
         STA .32
 ;    ahi = cpu.a >> 4;
         LDA .cpu.a
-        MOV L,A 
-        MVI H, 0
-        LXI D, 4
-        XCHG
+        MOV e, A 
+        MVI d, 0
+        LXI h, 4
         CALL .ur
         MOV A, L
         STA .33
 ;    rlo = rhs & 0xf;
         LXI H,8-.31
         DAD SP
-        MOV E, M
-        MVI D, 0
-        LXI H,15
-        CALL .an
-        MOV A,L
+        MOV a, M
+        ani 15
         STA .34
 ;    rhi = rhs >> 4;
         LXI H,8-.31
         DAD SP
         MOV E,M
-        MVI     D,0
+        MVI D,0
         LXI H,4
         CALL .ur
         MOV A,L
         STA .35
 ;
 ;    cpu.fZero = false;
-        mvi a, 0
+        xra a
         STA .cpu.fZero
 ;
 ;    if ( alo > 9 || ahi > 9 || rlo > 9 || rhi > 9 )
 ;        return;
         LDA .32
-        MOV L,A
-        MVI     H,0
-        LXI D,9
-        XCHG
-        CALL .ug
-        JNZ .40
+        cpi 10
+        jp .40
         LDA .33
-        MOV L,A
-        MVI     H,0
-        LXI D,9
-        XCHG
-        CALL .ug
-        JNZ .40
+        cpi 10
+        jp .40
         LDA .34
-        MOV L,A
-        MVI     H,0
-        LXI D,9
-        XCHG
-        CALL .ug
-        JNZ .40
+        cpi 10
+        jp .40
         LDA .35
-        MOV L,A
-        MVI     H,0
-        LXI D,9
-        XCHG
-        CALL .ug
-        JZ .39
+        cpi 10
+        jm .39
 .40:
         jmp cret
 ;
@@ -515,7 +496,7 @@ op_bcd_m_:
 .39:
         LDA .32
         MOV L,A
-        MVI     H,0
+        MVI H,0
         PUSH H
         LDA .33
         MOV L,A
@@ -529,11 +510,11 @@ op_bcd_m_:
 ;    rd = rhi * 10 + rlo;
         LDA .34
         MOV L,A
-        MVI     H,0
+        MVI H,0
         PUSH H
         LDA .35
         MOV L,A
-        MVI     H,0
+        MVI H,0
         LXI D,10
         CALL .ml
         POP D
@@ -545,13 +526,9 @@ op_bcd_m_:
 ;    {
         LXI H,6-.31
         DAD SP
-        MOV E,M
-        MVI     D,0
-        PUSH D
-        LXI H,7
-        POP D
-        CALL .eq
-        JZ .41
+        MOV a,M
+        cpi 7
+        jne .41
 ;        if ( !cpu.fCarry )
 ;            rd += 1;
         lda .cpu.fCarry
@@ -561,7 +538,7 @@ op_bcd_m_:
         XCHG
         LDA .37
         MOV L,A
-        mvi     h,0
+        mvi h,0
         DAD D
         MOV A,L
         STA .37
@@ -571,11 +548,11 @@ op_bcd_m_:
 ;        {
         LDA .37
         MOV L,A
-        MVI     H,0
+        MVI H,0
         PUSH H
         LDA .36
         MOV L,A
-        MVI     H,0
+        MVI H,0
         POP D
         XCHG
         CALL .uf
@@ -583,11 +560,11 @@ op_bcd_m_:
 ;            result = ad - rd;
         LDA .37
         MOV L,A
-        MVI     H,0
+        MVI H,0
         PUSH H
         LDA .36
         MOV L,A
-        MVI     H,0
+        MVI H,0
         POP D
         XCHG
         CALL .sb
@@ -605,7 +582,7 @@ op_bcd_m_:
 ;            result = 100 + ad - rd;
         LDA .37
         MOV L,A
-        MVI     H,0
+        MVI H,0
         PUSH H
         LDA .36
         MOV L,A
@@ -631,15 +608,13 @@ op_bcd_m_:
 ;        result = ad + rd + cpu.fCarry;
         LDA .cpu.fCarry
         MOV L,A
-        MVI     H,0
+        MVI H,0
         PUSH H
         LDA .37
         MOV L,A
-        MVI     H,0
         PUSH H
         LDA .36
         MOV L,A
-        MVI     H,0
         POP D
         DAD D
         POP D
@@ -649,19 +624,16 @@ op_bcd_m_:
 ;        if ( result > 99 )
 ;        {
         LDA .38
-        MOV L,A
-        MVI     H,0
-        LXI D,99
-        XCHG
+        MOV e,A
+        MVI d,0
+        LXI h,99
         CALL .ug
         JZ .46
 ;            result -= 100;
         LXI H,100
-        XCHG
         LDA .38
-        MOV L,A
-        mvi     h,0
-        XCHG
+        MOV e,A
+        mvi d,0
         CALL .sb
         MOV A,L
         STA .38
@@ -683,17 +655,15 @@ op_bcd_m_:
 ;
 ;    cpu.a = ( ( result / 10 ) << 4 ) + ( result % 10 );
         LDA .38
-        MOV L,A
-        MVI     H,0
-        LXI D,10
-        XCHG
+        MOV e,A
+        MVI d,0
+        LXI h,10
         CALL .um
         PUSH H
         LDA .38
-        MOV L,A
-        MVI     H,0
-        LXI D,10
-        XCHG
+        MOV e,A
+        MVI d,0
+        LXI h,10
         CALL .ud
         DAD H
         DAD H
@@ -2187,10 +2157,9 @@ emulate_:
         mvi b, 0
         lxi h, ins_len__
         dad b
-        mov e, m
-        mvi d, 0
+        mov c, m
         lhld .cpu.pc
-        dad d
+        dad b
         shld .cpu.pc
 ;    }
         jmp .gothl_loop
@@ -2265,16 +2234,12 @@ emulate_:
         extrn   m_ff00_
         extrn   m_e000_
         extrn   m_d000_
-        extrn   .or
         extrn   .xr
         extrn   .an
         extrn   .eq
         extrn   .ne
-        extrn   .ue
         extrn   .ug
-        extrn   .ul
         extrn   .uf
-        extrn   .ls
         extrn   .ur
         extrn   .sb
         extrn   .ml
