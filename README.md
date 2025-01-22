@@ -69,8 +69,8 @@ Notes:
   - Performance on physical CP/M machines isn't great. Compared to a physical 1.022727 Mhz 6502:
    - Using m6502.c when run on a 2Mhz 8080, A1 built with Aztec C is 207 times slower.
    - Using m6502.c when run on a 4Mhz Z80, A1 built with the HI-TECH compiler is 95 times slower.
-   - Using m6.asm when run on a 2Mhz 8080, A1 is 121 times slower.
-   - Using m6.asm when run on a 4Mhz Z80, A1 is 60.6 times slower. This is typical for interpreter emulators across platforms.
+   - Using m6.asm when run on a 2Mhz 8080, A1 is 108 times slower.
+   - Using m6.asm when run on a 4Mhz Z80, A1 is 53.8 times slower. This is typical for interpreter emulators across platforms.
   - The Aztec Z80 variant compiler CZ.COM produces slower code than the 8080 CC.COM variant and should be avoided.
   - When using the HI-TECH compiler, get the [optimizer](https://github.com/nikitinprior/doptim) built for your native platform and run it as shown in mh.bat for the best performance. The emulator C code is too large for the Z80 version of the optimizer to run.
   - CP/M machines have at most 64k of RAM, so the Apple 1 machine has less than that:
