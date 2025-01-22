@@ -260,7 +260,6 @@ op_brotate:
         rrc
         rrc
         ani 7
-        mov c, a
 ;    if ( 0 == rotate ) /* asl */        
 ;    {
         cpi 0
@@ -426,10 +425,10 @@ op_bit_:
         PUBLIC op_bcd_m_
 op_bcd_m_:
         push b
-        lxi h,0
+        lxi h, 0
         dad sp
         xchg
-        lxi h,.31
+        lxi h, .31
         dad sp
         sphl
         push d
@@ -449,18 +448,18 @@ op_bcd_m_:
         STA .32
 ;    ahi = cpu.a >> 4;
         LDA .cpu.a
-        MOV L,A
-        MVI     H,0
-        LXI D,4
+        MOV L,A 
+        MVI H, 0
+        LXI D, 4
         XCHG
         CALL .ur
-        MOV A,L
+        MOV A, L
         STA .33
 ;    rlo = rhs & 0xf;
         LXI H,8-.31
         DAD SP
-        MOV E,M
-        MVI     D,0
+        MOV E, M
+        MVI D, 0
         LXI H,15
         CALL .an
         MOV A,L
@@ -707,7 +706,7 @@ op_bcd_m_:
 ;}
         jmp cret
 .31 EQU 0
-;
+
 ;void op_math( op, rhs ) uint8_t op; uint8_t rhs;
 ; non-standard calling convention: op in c, rhs in b
         PUBLIC op_math_
@@ -718,39 +717,40 @@ op_math_:
 ;    uint8_t result;
         bss     .om_result,1
 ;    math = op >> 5;
-        mov e,c
-        mvi d,0
-        lxi h,5
-        call .ur
-        mov c,l
+        mov a, c
+        rrc
+        rrc
+        rrc
+        rrc
+        rrc
+        ani 7
+        mov e, a  ; math operation is in e
 ;    if ( 6 == math )
 ;    {
         cpi 6
-        jnz .52
+        jnz .math_dec
         lda .cpu.a
-        call op_bcmp_
 ;        return;
-        ret
+        jmp op_bcmp_ ; returns from op_bcmp
 ;    }
-;
 ;    if ( cpu.fDecimal && ( 7 == math || 3 == math ) )
-.52:
+.math_dec:
 ;    {
         lda .cpu.fDecimal
         ora a
-        jz .53
-        mov a, c
+        jz .math_7
+        mov a, e
         cpi 7
-        jz .54
+        jz .math_bcd
         cpi 3
-        jnz .53
-.54:
+        jnz .math_7
+.math_bcd:
 ;        op_bcd_math( math, rhs );
-        mov e,b
-        mvi d,0
+        mov l, e
+        mov e, b
+        mvi d, 0
         push d
-        mov l,c
-        mvi h,0
+        mvi h, 0
         push h
         call op_bcd_m_
         pop d
@@ -758,32 +758,29 @@ op_math_:
 ;        return;
         ret
 ;    }
-;
 ;    if ( 7 == math )
-.53:
+.math_7:
 ;    {
-        mov a, c
+        mov a, e
         cpi 7
-        jnz .55
-
+        jnz .math_3
 ;        rhs = 255 - rhs;
         mvi a, 255
         sub b
         mov b, a
 ;        math = 3;
-        mvi c, 3
+        mvi a, 3
+        mov e, a
 ;    }
-;
 ;    if ( 3 == math )
-.55:
+.math_3:
 ;    {
-        mov a, c
         cpi 3
-        jnz .56
+        jnz .math_0
 ;        res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
         lda .cpu.a
-        mov l,a
-        mvi h,0
+        mov l, a
+        mvi h, 0
         mov e, b
         mvi d, 0
         dad d
@@ -796,11 +793,11 @@ op_math_:
         sta .om_result
 ;        cpu.fCarry = ( 0 != ( res16 & 0xff00 ) );
         lhld .om_res16
-        lxi d,-256
+        lxi d, -256
         call .an
         lxi d, 0
         call .ne
-        mov a,l
+        mov a, l
         sta .cpu.fCarry
 ;        cpu.fOverflow = ( ! ( ( cpu.a ^ rhs ) & 0x80 ) ) && ( ( cpu.a ^ result ) & 0x80 );
         mvi l, 0
@@ -821,47 +818,38 @@ op_math_:
 ;        cpu.a = result;
         lda .om_result
         sta .cpu.a
+        jmp aset_nz_
 ;    }
 ;    else if ( 0 == math )
-        JMP .60
-.56:
+.math_0:
 ;        cpu.a |= rhs;
-        mov a, c
-        ora a
-        jnz .61
+        cpi 0
+        jnz .math_1
         lda .cpu.a
         ora b
         sta .cpu.a
+        jmp aset_nz_
 ;    else if ( 1 == math )
-        JMP .62
-.61:
+.math_1:
 ;        cpu.a &= rhs;
-        mov a, c
         cpi 1
-        jnz .63
+        jnz .math_2
         lda .cpu.a
         ana b
         sta .cpu.a
+        jmp aset_nz_
 ;    else if ( 2 == math )
-        JMP .64
-.63:
+.math_2:
 ;        cpu.a ^= rhs;
-        mov a, c
         cpi 2
-        jnz .65
+        rnz
         lda .cpu.a
         xra b
         sta .cpu.a
-;
 ;    set_nz( cpu.a );
-.65:
-.64:
-.62:
-.60:
-        lda .cpu.a
-        call aset_nz_
+ .math_nz:
+        jmp aset_nz_
 ;}
-        ret
 
 ;void op_pop_pf()
 ;{
@@ -1063,23 +1051,23 @@ op_php_:
 ;            xra a
 ;            STA ac_flags_+6
 ;    ;    return ac_flags;
-;            LXI H,ac_flags_
+;            LXI H, ac_flags_
 ;            jmp cret
 ;    ;}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
 
 ;    uint8_t op;
-        bss     .op,1     ; 0th byte of current operand
-        bss     .op1,1    ; 1st "
+        bss     .op1,1    ; 1st byte after the current opcode
         bss     .op2,1    ; 2nd "
 
 ;void emulate()
 ;{
         PUBLIC emulate_
 emulate_:
-     mvi c, 0b9h
-     mvi d, 1
-     call 5
+; enable instruction tracing in ntvcm. 
+;     mvi c, 0b9h
+;     mvi d, 1
+;     call 5
 
 ;
 ;    for (;;)
@@ -1089,8 +1077,7 @@ emulate_:
 .gothl_loop          ; assumes hl has cpu.pc
         call get_hmem_
         mov a, m
-        sta .op
-        mov b, a
+        mov c, a     ; the current opcode is in register c unless modified
 
         ; It's very expensive to always store these even when they're unused,
         ; but it's slower overall to recalculate them for instructions that need them.
@@ -1101,9 +1088,9 @@ emulate_:
         mov h, m
         mov l, e
         shld .op1
-        mov a, b
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
+;            push b ; preserve register c 
 ;            CALL render_f_
 ;            PUSH H
 ;            LDA .cpu.sp
@@ -1119,8 +1106,7 @@ emulate_:
 ;            LDA .cpu.a
 ;            MOV L,A
 ;            PUSH H
-;            LDA .op
-;            MOV L,A
+;            MOV L,c
 ;            PUSH H
 ;            LHLD .cpu.pc
 ;            PUSH H
@@ -1131,7 +1117,8 @@ emulate_:
 ;            LXI H,16
 ;            DAD SP
 ;            SPHL
-;            lda .op
+;            pop b ; restore register c
+;            mov a, c
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
 
 ;        switch( op )
@@ -1209,8 +1196,6 @@ emulate_:
         mov l, e
         call get_hmem_
         mov b, m
-        lda .op
-        mov c, a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1230,8 +1215,6 @@ emulate_:
         mvi h, 0
         call get_hmem_
         mov b, m
-        lda .op
-        mov c, a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1247,8 +1230,6 @@ emulate_:
 ;                op_math( op, get_byte( cpu.pc + 1 ) );
         lda .op1
         mov b, a
-        lda .op
-        mov c,a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1266,8 +1247,6 @@ emulate_:
         lhld .op1
         call get_hmem_
         mov b, m
-        lda .op
-        mov c, a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1295,8 +1274,6 @@ emulate_:
         dad d
         call get_hmem_
         mov b, m
-        lda .op
-        mov c, a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1318,8 +1295,6 @@ emulate_:
         mvi h, 0
         call get_hmem_
         mov b, m
-        lda .op
-        mov c, a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1340,8 +1315,6 @@ emulate_:
         dad d
         call get_hmem_
         mov b, m
-        lda .op
-        mov c, a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1363,8 +1336,6 @@ emulate_:
         dad d
         call get_hmem_
         mov b, m
-        lda .op
-        mov c, a
         call op_math_
 ;                break;
         jmp .next_pc
@@ -1395,7 +1366,7 @@ emulate_:
 .154:
         lda .op1
         mov e, a
-        mvi d,0
+        mvi d, 0
         lda .cpu.x
         mov l, a
         mvi h, 0
@@ -1420,8 +1391,6 @@ emulate_:
         push h ; save pb
 ;                *pb = op_rotate( op, *pb );
         mov b, m
-        lda .op
-        mov c, a
         call op_brotate
         pop h
         mov m, a
@@ -1439,8 +1408,8 @@ emulate_:
 ;            {
 ;                op = m_hook();
         call m_hook_
-        mov a, l
-        sta .op
+;        mov a, l
+;        sta .op
 ;                if ( 0 != g_State )
 ;                    goto _gstate_set;
         lda g_State_
@@ -1669,8 +1638,6 @@ emulate_:
 .187:
         lda .cpu.a
         mov b, a
-        lda .op
-        mov c, a
         call op_brotate
         sta .cpu.a
         jmp .next_pc
@@ -1778,14 +1745,14 @@ emulate_:
 ;_st_complete:
 .st_complete:
 ;                set_byte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
-        lda .op
+        mov a, c
         ani 1
         jz .204
         lda .cpu.a
         mov b, a
         jmp .205
 .204:
-        lda .op
+        mov a, c
         ani 2
         jz .206
         lda .cpu.x
@@ -1855,7 +1822,7 @@ emulate_:
         lda .cpu.x
         mov e, a
         dad d
-        mvi h,0
+        mvi h, 0
         call get_hmem_
         mov e, m
         inx h
@@ -2003,7 +1970,7 @@ emulate_:
 ;        
 ;                if ( op & 1 )
 ;                    cpu.a = val;
-        lda .op
+        mov a, c
         ani 1
         jz .236
         mov a, b
@@ -2012,7 +1979,7 @@ emulate_:
         jmp .next_pc
 .236:
 ;                    cpu.x = val;
-        lda .op
+        mov a, c
         ani 2
         jz .238
         mov a, b
@@ -2096,7 +2063,7 @@ emulate_:
         lda .cpu.x
         add m
         mov l, a
-        mvi h,0
+        mvi h, 0
         jmp .crement_complete
 ;
 ;            case 0xde : case 0xfe: /* inc/dec a16, x */
@@ -2115,7 +2082,7 @@ emulate_:
         call get_hmem_
 ;                if ( op >= 0xe6 )
 ;                    (*pb)++;
-        lda .op
+        mov a, c
         cpi 0e6h
         jm .255
         inr m
@@ -2208,10 +2175,8 @@ emulate_:
         jmp .all_done
 ;            default: m_hard_exit( "unknown mos6502 opcode %02x\n", op );
 .268:
-        lda .op
-        mov l, a
-        mvi h, 0
-        push h
+        mvi b, 0
+        push b
         lxi h, .unk_op
         push h
         call m_hard_e_  ; no coming back from this
@@ -2219,11 +2184,9 @@ emulate_:
         jmp .next_pc
 .next_pc:
 ;        cpu.pc += ins_len_6502[ op ];
-        lda .op
-        mov l, a
-        mvi h, 0
-        lxi d, ins_len__
-        dad d
+        mvi b, 0
+        lxi h, ins_len__
+        dad b
         mov e, m
         mvi d, 0
         lhld .cpu.pc
