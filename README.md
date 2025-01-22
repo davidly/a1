@@ -11,9 +11,11 @@ Files:
 
    - m.bat        Builds a1 using Aztec C Vers. 1.06D 8080  (C) 1982 1983 1984 by Manx Software Systems
    - mh.bat       Builds a1 using HI-TECH C COMPILER (CP/M-80) V3.09
+   - m6.bat       Builds a1 using Aztec C and m6.asm instead of m6502.c Faster, but hard to modify.
    - a1.c         Apple 1 emulator main app
    - m6502.c      MOS 6502 emulator
    - m6502.h      header for MOS 6502 emulator
+   - m6.asm       assembly alternative to m6502.c. Runs aboue 1.7x faster. use m6.bat to build
    - getmem.asm   get_mem() implementation for HI-TECH C COMPILER
    - 6502fun.hex  [6502 functional tests](https://github.com/Klaus2m5/6502_65C02_functional_tests)
    - run_fun_tests.bat Invokes ntvcm and a1 to run 6502fun.hex and validate the 6502 is working
@@ -26,6 +28,10 @@ Files:
    - ttt1st.bas   like tttstdin.bas but only checks first move, not all 3 unique first moves
    - tttaztec.hex app generated from Aztec C for 6502 that solves tic-tac-toe
    - tttcc651.hex app generated from cc65 C compiler that solves tic-tac-toe
+   - eaztec.hex   computes e using Aztec C for 6502
+   - ecc65.hex    computes e using CC65
+   - sieveaz.hex  BYTE benchmark to count primes using Aztec C for 6502
+   - sievec65.hex BYTE benchmark to count primes using CC65
    - badaddr.bas  test program that references unavailable RAM
    - badaddr.txt  test program that references  unavailable RAM
    - runall.bat   runs test apps
@@ -60,7 +66,11 @@ The CP/M C compilers can be found here: [CP/M Compilers](https://github.com/davi
 To build and validate on Linux, use m.sh and runall.sh. Many files need to be renamed or copied to uppercase names. For macOS the uppercase filenames aren't needed.
 
 Notes:
-  - Performance on physical CP/M machines isn't great. When run on a 2Mhz 8080, A1 built with Aztec C is 207x slower than a physical 1Mhz 6502. When run on a 4Mhz Z80, A1 built with the HI-TECH compiler is 95x slower than a physical 1Mhz 6502. That said, performnce on modern hardware is great.
+  - Performance on physical CP/M machines isn't great. Compared to a physical 1.022727 Mhz 6502:
+   - Using m6502.c when run on a 2Mhz 8080, A1 built with Aztec C is 207 times slower.
+   - Using m6502.c when run on a 4Mhz Z80, A1 built with the HI-TECH compiler is 95 times slower.
+   - Using m6.asm when run on a 2Mhz 8080, A1 is 121 times slower.
+   - Using m6.asm when run on a 4Mhz Z80, A1 is 60.6 times slower. This is typical for interpreter emulators across platforms.
   - The Aztec Z80 variant compiler CZ.COM produces slower code than the 8080 CC.COM variant and should be avoided.
   - When using the HI-TECH compiler, get the [optimizer](https://github.com/nikitinprior/doptim) built for your native platform and run it as shown in mh.bat for the best performance. The emulator C code is too large for the Z80 version of the optimizer to run.
   - CP/M machines have at most 64k of RAM, so the Apple 1 machine has less than that:
