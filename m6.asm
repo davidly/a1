@@ -413,257 +413,180 @@ op_bit_:
 ;void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
         PUBLIC op_bcd_m_
 op_bcd_m_:
-        push b
-        lxi h, 0
-        dad sp
-        xchg
-        lxi h, .31
-        dad sp
-        sphl
-        push d
 ;{
 ;    uint8_t alo, ahi, rlo, rhi, ad, rd, result;
-        bss     .32,1
-        bss     .33,1
-        bss     .34,1
-        bss     .35,1
-        bss     .36,1
-        bss     .37,1
-        bss     .38,1
-;
+        bss     .bcdalo, 1
+        bss     .bcdahi, 1
+        bss     .bcdrlo, 1
+        bss     .bcdrhi, 1
+        bss     .bcdad, 1
+        bss     .bcdrd, 1
+        bss     .bcdresult, 1
 ;    alo = cpu.a & 0xf;
-        LDA .cpu.a
-        ani 0fh
-        STA .32
 ;    ahi = cpu.a >> 4;
-        LDA .cpu.a
-        MOV e, A 
-        MVI d, 0
-        LXI h, 4
-        CALL .ur
-        MOV A, L
-        STA .33
 ;    rlo = rhs & 0xf;
-        LXI H,8-.31
-        DAD SP
-        MOV a, M
-        ani 15
-        STA .34
 ;    rhi = rhs >> 4;
-        LXI H,8-.31
-        DAD SP
-        MOV E,M
-        MVI D,0
-        LXI H,4
-        CALL .ur
-        MOV A,L
-        STA .35
-;
+;    if ( alo > 9 || ahi > 9 || rlo > 9 || rhi > 9 )
+;        return;
+        lda .cpu.a
+        ani 0fh
+        cpi 10
+        rp
+        sta .bcdalo
+;    ahi = cpu.a >> 4;
+        lda .cpu.a
+        rrc
+        rrc
+        rrc
+        rrc
+        ani 0fh
+        cpi 10
+        rp
+        sta .bcdahi
+;    rlo = rhs & 0xf;
+        lxi h, 4
+        dad sp
+        mov a, m
+        mov e, a
+        ani 0fh
+        cpi 10
+        rp
+        sta .bcdrlo
+;    rhi = rhs >> 4;
+        mov a, e
+        rrc
+        rrc
+        rrc
+        rrc
+        ani 0fh
+        cpi 10
+        rp
+        sta .bcdrhi
 ;    cpu.fZero = false;
         xra a
         STA .cpu.fZero
-;
-;    if ( alo > 9 || ahi > 9 || rlo > 9 || rhi > 9 )
-;        return;
-        LDA .32
-        cpi 10
-        jp .40
-        LDA .33
-        cpi 10
-        jp .40
-        LDA .34
-        cpi 10
-        jp .40
-        LDA .35
-        cpi 10
-        jm .39
-.40:
-        jmp cret
-;
 ;    ad = ahi * 10 + alo;
 .39:
-        LDA .32
-        MOV L,A
-        MVI H,0
-        PUSH H
-        LDA .33
-        MOV L,A
-        MVI     H,0
-        LXI D,10
-        CALL .ml
-        POP D
-        DAD D
-        MOV A,L
-        STA .36
+        lda .bcdahi
+        mov l, a
+        mvi h, 0
+        lxi d, 10
+        call .ml
+        lda .bcdalo
+        mov e, a
+        mvi d, 0
+        dad d
+        mov a,l
+        sta .bcdad
 ;    rd = rhi * 10 + rlo;
-        LDA .34
-        MOV L,A
-        MVI H,0
-        PUSH H
-        LDA .35
-        MOV L,A
-        MVI H,0
-        LXI D,10
-        CALL .ml
-        POP D
-        DAD D
-        MOV A,L
-        STA .37
-;
+        lda .bcdrhi
+        mov l,a
+        mvi h,0
+        lxi d,10
+        call .ml
+        lda .bcdrlo
+        mov e, a
+        mvi d, 0
+        dad d
+        mov a,l
+        sta .bcdrd
 ;    if ( 7 == math )
 ;    {
-        LXI H,6-.31
+        LXI H, 2
         DAD SP
-        MOV a,M
+        MOV a, M
         cpi 7
         jne .41
 ;        if ( !cpu.fCarry )
 ;            rd += 1;
         lda .cpu.fCarry
         ora a
-        JNZ .42
-        LXI H,1
-        XCHG
-        LDA .37
-        MOV L,A
-        mvi h,0
-        DAD D
-        MOV A,L
-        STA .37
-;
+        jnz .42
+        lda .bcdrd
+        inr a
+        sta .bcdrd
 ;        if ( ad >= rd )
 .42:
 ;        {
-        LDA .37
-        MOV L,A
-        MVI H,0
-        PUSH H
-        LDA .36
-        MOV L,A
-        MVI H,0
-        POP D
-        XCHG
-        CALL .uf
-        JZ .43
+        lda .bcdrd
+        mov l, a
+        lda .bcdad
+        sub l
+        jm .43
 ;            result = ad - rd;
-        LDA .37
-        MOV L,A
-        MVI H,0
-        PUSH H
-        LDA .36
-        MOV L,A
-        MVI H,0
-        POP D
-        XCHG
-        CALL .sb
-        MOV A,L
-        STA .38
+        sta .bcdresult
 ;            cpu.fCarry = true;
-        LXI H,1
-        MOV A,L
-        STA .cpu.fCarry
+        mvi a, 1
+        jmp .44
 ;        }
 ;        else
-        JMP .44
 .43:
 ;        {
 ;            result = 100 + ad - rd;
-        LDA .37
-        MOV L,A
-        MVI H,0
-        PUSH H
-        LDA .36
-        MOV L,A
-        MVI     H,0
-        LXI D,100
-        DAD D
-        POP D
-        XCHG
-        CALL .sb
-        MOV A,L
-        STA .38
+        lda .bcdad
+        adi 100
+        sub l
+        sta .bcdresult
 ;            cpu.fCarry = false;
-        LXI H,0
-        MOV A,L
-        STA .cpu.fCarry
+        xra a
 ;        }
 .44:
+        sta .cpu.fCarry
+        jmp .45
 ;    }
 ;    else
-        JMP .45
 .41:
 ;    {
 ;        result = ad + rd + cpu.fCarry;
-        LDA .cpu.fCarry
-        MOV L,A
-        MVI H,0
-        PUSH H
-        LDA .37
-        MOV L,A
-        PUSH H
-        LDA .36
-        MOV L,A
-        POP D
-        DAD D
-        POP D
-        DAD D
-        MOV A,L
-        STA .38
+        lda .cpu.fCarry
+        mov e, a
+        lda .bcdrd
+        mov d, a
+        lda .bcdad
+        add e
+        add d
+        sta .bcdresult
 ;        if ( result > 99 )
 ;        {
-        LDA .38
-        MOV e,A
-        MVI d,0
-        LXI h,99
-        CALL .ug
-        JZ .46
+        cpi 100
+        jm .46
 ;            result -= 100;
-        LXI H,100
-        LDA .38
-        MOV e,A
-        mvi d,0
-        CALL .sb
-        MOV A,L
-        STA .38
+        sbi 100
+        sta .bcdresult
 ;            cpu.fCarry = true;
-        LXI H,1
-        MOV A,L
-        STA .cpu.fCarry
+        mvi a, 1
+        jmp .47
 ;        }
 ;        else
-        JMP .47
 .46:
 ;            cpu.fCarry = false;
-        LXI H,0
-        MOV A,L
-        STA .cpu.fCarry
+        xra a
 .47:
+        sta .cpu.fCarry
 ;    }
 .45:
-;
 ;    cpu.a = ( ( result / 10 ) << 4 ) + ( result % 10 );
-        LDA .38
-        MOV e,A
-        MVI d,0
-        LXI h,10
-        CALL .um
-        PUSH H
-        LDA .38
-        MOV e,A
-        MVI d,0
-        LXI h,10
-        CALL .ud
-        DAD H
-        DAD H
-        DAD H
-        DAD H
-        POP D
-        DAD D
-        MOV A,L
-        STA .cpu.a
+        lda .bcdresult
+        mov e, a
+        mvi d, 0
+        lxi h, 10
+        call .um
+        push h
+        lda .bcdresult
+        mov e, a
+        mvi d, 0
+        lxi h, 10
+        call .ud
+        dad h
+        dad h
+        dad h
+        dad h
+        pop d
+        dad d
+        mov a, l
+        sta .cpu.a
 ;}
-        jmp cret
-.31 EQU 0
+        ret
 
 ;void op_math( op, rhs ) uint8_t op; uint8_t rhs;
 ; non-standard calling convention: op in c, rhs in b
@@ -702,6 +625,7 @@ op_math_:
         jnz .math_7
 .math_bcd:
 ;        op_bcd_math( math, rhs );
+        push b ; bcd math calls .ml, which trashes c
         mov l, e
         mov e, b
         mvi d, 0
@@ -711,6 +635,7 @@ op_math_:
         call op_bcd_m_
         pop d
         pop d
+        pop b
 ;        return;
         ret
 ;    }
