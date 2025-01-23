@@ -1026,10 +1026,6 @@ op_php_:
 ;    ;}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
 
-;    uint8_t op;
-        bss     .op1,1    ; 1st byte after the current opcode. stored in register e also
-        bss     .op2,1    ; 2nd "
-
 ;void emulate()
 ;{
         PUBLIC emulate_
@@ -1046,23 +1042,20 @@ emulate_:
         lhld .cpu.pc
 .gothl_loop          ; assumes hl has cpu.pc
         call get_hmem_
-        mov a, m
-        mov c, a     ; ==> the current opcode is in register c
+        mov c, m     ; ==> the current opcode is in register c
 
-        ; It's very expensive to always store these even when they're unused,
+        ; It's very expensive to always load these even when they're unused,
         ; but it's slower overall to recalculate them for instructions that need them.
-        ; Doing this also makes the rest of the code below more simple.
-        ; ==> op1 is in register e
+        ; ==> op1 is in register e (first byte after the opcode)
+        ; ==> op2 is in register d (second byte after the opcode)
         inx h
         mov e, m
         inx h
-        mov h, m
-        mov l, e
-        shld .op1
+        mov d, m
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
 ;            push b ; preserve register c 
-;            push d ; preserve register e
+;            push d ; preserve registers d and e
 ;            CALL render_f_
 ;            PUSH H
 ;            LDA .cpu.sp
@@ -1089,7 +1082,7 @@ emulate_:
 ;            LXI H,16
 ;            DAD SP
 ;            SPHL
-;            pop d ; register register e (op1)
+;            pop d ; restore registers d and e
 ;            pop b ; restore register c (the opcode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
 
@@ -1211,7 +1204,7 @@ emulate_:
 ;            {
 ;                op_math( op, get_byte( get_word( cpu.pc + 1 ) )
 ; );
-        lhld .op1
+        xchg
         call get_hmem_
         mov b, m
         call op_math_
@@ -1272,10 +1265,9 @@ emulate_:
 .135:
 ;            {
 ;                op_math( op, get_byte( get_word( cpu.pc + 1 ) + cpu.y ) );
-        lhld .op1
         lda .cpu.y
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
         call get_hmem_
         mov b, m
@@ -1293,10 +1285,9 @@ emulate_:
 .141:
 ;            {
 ;                op_math( op, get_byte( cpu.x + get_word( cpu.pc + 1 ) ) );
-        lhld .op1
         lda .cpu.x
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
         call get_hmem_
         mov b, m
@@ -1319,7 +1310,7 @@ emulate_:
 .148:
 .149:
 .150:
-        lhld .op1
+        xchg
         jmp .rot_complete
 ; case 0x16: case 0x36: case 0x56: case 0x76: { address = ( cpu.x + get_byte( cpu.pc + 1 ) ); goto _rot_complete; }
 ;      /* asl/rol/lsr/ror a8, x */
@@ -1340,10 +1331,9 @@ emulate_:
 .158:
 ;            {
 ;                address = cpu.x + get_word( cpu.pc + 1 );
-        lhld .op1
         lda .cpu.x
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
 ;_rot_complete:
 .rot_complete:
@@ -1457,6 +1447,7 @@ emulate_:
 .173:
 ;            {
 ;                push_word( cpu.pc + 2 );
+        push d  ; save op1 and op2
         lhld .cpu.pc
         inx h
         inx h
@@ -1475,7 +1466,7 @@ emulate_:
         dcr a
         sta .cpu.sp
 ;                cpu.pc = get_word( cpu.pc + 1 );
-        lhld .op1
+        pop h ; restore op1 and op2
         shld .cpu.pc
 ;                continue;
         JMP .gothl_loop
@@ -1495,7 +1486,7 @@ emulate_:
 ;                        /* plp NZCIDV */
 ; case 0x2c: { op_bit( get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* bit a16 NVZ */
 .176:
-        lhld .op1
+        xchg
         call get_hmem_
         mov a, m
         call op_bit_
@@ -1543,7 +1534,7 @@ emulate_:
          jmp .next_pc
 ; case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); continue; } /* jmp a16 */
 .180:
-        lhld .op1
+        xchg
         shld .cpu.pc
         jmp .gothl_loop
 ;            case 0x58: { cpu.fInterruptDisable = false; break; }      /* cli */
@@ -1601,7 +1592,7 @@ emulate_:
         jmp .next_pc
 ; case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); continue; } /* jmp (a16) */
 .188:
-        lhld .op1
+        xchg
         call get_hmem_
         mov e, m
         inx h
@@ -1641,7 +1632,7 @@ emulate_:
 .195:
 .196:
 .197:
-        lhld .op1
+        xchg
         jmp .st_complete
 ; case 0x91: { address = cpu.y + get_word( get_byte( cpu.pc + 1 ) ); goto _st_complete; }
 ;      /* sta (a8), y */
@@ -1679,10 +1670,9 @@ emulate_:
 ; case 0x99: { address = get_word( cpu.pc + 1 ) + cpu.y; goto _st_complete; }
 ; /* sta a16, y */
 .202:
-        lhld .op1
         lda .cpu.y
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
         jmp .st_complete
 ; case 0x9d: /* sta a16, x */
@@ -1690,10 +1680,9 @@ emulate_:
 ;
 ;            {
 ;                address = get_word( cpu.pc + 1 ) + cpu.x;
-        lhld .op1
         lda .cpu.x
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
 ;_st_complete:
 .st_complete:
@@ -1794,7 +1783,7 @@ emulate_:
 .222:
 .223:
 .224:
-        lhld .op1
+        xchg
         jmp .ld_complete
 ; case 0xb1: { address = cpu.y + get_word( (uint16_t) get_byte( cpu.pc + 1 ) ); goto _ld_complete; }
 ;      /* lda (a8), y */
@@ -1831,10 +1820,9 @@ emulate_:
 ;      /* lda/ldx a16, y */
 .229:
 .230:
-        lhld .op1
         lda .cpu.y
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
         jmp .ld_complete
 ; case 0xbc: case 0xbd: /* ldy/lda a16, x */
@@ -1842,10 +1830,9 @@ emulate_:
 .232:
 ;            {
 ;                address = get_word( cpu.pc + 1 ) + cpu.x;
-        lhld .op1
         lda .cpu.x
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
 ;       
 ;_ld_complete:   /* load */
@@ -2015,10 +2002,9 @@ emulate_:
 .254:
 ;            {
 ;                address = cpu.x + get_word( cpu.pc + 1 );
-        lhld .op1
         lda .cpu.x
-        mov e, a
-        mvi d, 0
+        mov l, a
+        mvi h, 0
         dad d
 ;_crement_complete:
 .crement_complete:
@@ -2057,7 +2043,7 @@ emulate_:
         jmp .next_pc
 ; case 0xcc: { op_cmp( cpu.y, get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* cpy a16 */
 .259:
-        lhld .op1
+        xchg
         call get_hmem_
         mov b, m
         lda .cpu.y
@@ -2102,7 +2088,7 @@ emulate_:
 ;
 ; case 0xec: { op_cmp( cpu.x, get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* cpx a16 */
 .265:
-        lhld .op1
+        xchg
         call get_hmem_
         mov b, m
         lda .cpu.x
