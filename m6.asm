@@ -366,6 +366,7 @@ op_bcmp_:
 ;{
 ;    uint8_t result;
 ;    result = (uint8_t) ( (uint16_t) lhs - (uint16_t) rhs );
+;    cpu.fCarry = ( lhs >= rhs );
         sub b
         mov b, a
         mvi a, 0
@@ -374,21 +375,8 @@ op_bcmp_:
         sta .cpu.fCarry
         mov a, b
 ;    set_nz( result );
-        call aset_nz_
-        ret
-;    cpu.fCarry = ( lhs >= rhs );
-        mov a, b
-        ani 128
-        jz _ctruebcmp
-        xra a
-        sta .cpu.fCarry
-        ret
-  _ctruebcmp:
-        inr a
-        sta .cpu.fCarry
-        ret
+        jmp aset_nz_
 
-;
 ;void op_bit( val ) uint8_t val;
 ; the val argument is in the a register
         PUBLIC op_bit_
