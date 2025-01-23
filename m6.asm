@@ -39,7 +39,6 @@
 g_State_:
         DB 0
     CSEG
-;
 ;#define stateEndEmulation 2
 ;#define stateSoftReset 4
 ;
@@ -99,8 +98,9 @@ bad_addr_:
         lxi h, .bad_addr_err
         push h
         call printf_
-        pop d
-        pop d
+; no need to restore the stack; the app is exiting
+;        pop d
+;        pop d
 ;    exit( 1 );
         jmp exit_  ; cp/m apps don't have exit codes. exit doesn't return
 
@@ -401,10 +401,10 @@ op_bit_:
         ana e
         jz .ob_z
         xra a
-        jmp .ob_stz
+        sta .cpu.fZero
+        ret
   .ob_z:
         inr a
-  .ob_stz:
         sta .cpu.fZero
         ret
 
@@ -670,8 +670,6 @@ op_bcd_m_:
         PUBLIC op_math_
 op_math_:
 ;{
-;    uint16_t res16; 
-        bss     .om_res16,2
 ;    uint8_t result;
         bss     .om_result,1
 ;    math = op >> 5;
@@ -682,7 +680,6 @@ op_math_:
         rrc
         rrc
         ani 7
-        mov e, a  ; math operation is in e
 ;    if ( 6 == math )
 ;    {
         cpi 6
@@ -694,10 +691,11 @@ op_math_:
 ;    if ( cpu.fDecimal && ( 7 == math || 3 == math ) )
 .math_dec:
 ;    {
+        mov e, a  ; math operation is saved in e
         lda .cpu.fDecimal
         ora a
-        jz .math_7
         mov a, e
+        jz .math_7
         cpi 7
         jz .math_bcd
         cpi 3
@@ -719,7 +717,6 @@ op_math_:
 ;    if ( 7 == math )
 .math_7:
 ;    {
-        mov a, e
         cpi 7
         jnz .math_3
 ;        rhs = 255 - rhs;
@@ -727,14 +724,14 @@ op_math_:
         sub b
         mov b, a
 ;        math = 3;
-        mvi a, 3
-        mov e, a
+        jmp .m3_for_sure
 ;    }
 ;    if ( 3 == math )
 .math_3:
 ;    {
         cpi 3
         jnz .math_0
+.m3_for_sure:
 ;        res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
         lda .cpu.a
         mov l, a
@@ -745,36 +742,31 @@ op_math_:
         lda .cpu.fCarry
         mov e, a
         dad d
-        shld .om_res16
 ;        result = (uint8_t) res16; /* cast generates faster code for Aztec than & 0xff */
-        mov a, l
-        sta .om_result
+        mov d, l ; save 8-bit result in d
 ;        cpu.fCarry = ( 0 != ( res16 & 0xff00 ) );
-        lhld .om_res16
-        lxi d, -256
-        call .an
-        lxi d, 0
-        call .ne
-        mov a, l
+        mov a, h
+        ora a
+        jz .m3_sc
+        mvi a, 1
+.m3_sc:
         sta .cpu.fCarry
 ;        cpu.fOverflow = ( ! ( ( cpu.a ^ rhs ) & 0x80 ) ) && ( ( cpu.a ^ result ) & 0x80 );
         mvi l, 0
-        lda .cpu.a
-        xra b
-        ani 128
-        jnz .59
-        lda .cpu.a
+        lda .cpu.a   ; cpu.a
         mov e, a
-        lda .om_result
-        xra e
-        ani 128
+        xra b        ; rhs
+        ani 80h
+        jnz .59
+        mov a, e     ; cpu.a
+        xra d        ; result
+        ani 80h
         jz .59
         mvi l, 1
 .59:
         mov a, l
         sta .cpu.fOverflow
-;        cpu.a = result;
-        lda .om_result
+        mov a, d
         sta .cpu.a
         jmp aset_nz_
 ;    }
@@ -799,13 +791,10 @@ op_math_:
 ;    else if ( 2 == math )
 .math_2:
 ;        cpu.a ^= rhs;
-        cpi 2
-        rnz
         lda .cpu.a
         xra b
         sta .cpu.a
 ;    set_nz( cpu.a );
- .math_nz:
         jmp aset_nz_
 ;}
 
@@ -1028,7 +1017,7 @@ emulate_:
 ;    {
 ;        op = get_byte( cpu.pc );
         lhld .cpu.pc
-.gothl_loop          ; assumes hl has cpu.pc
+.big_loop          ; assumes hl has cpu.pc
         call get_hmem_
         mov c, m     ; ==> the current opcode is in register c
 
@@ -1115,7 +1104,7 @@ emulate_:
         mvi a, 1
         sta .cpu.fInterruptDisble
 ;                cpu.pc = get_word( 0xfffe );
-        lxi h, -2
+        lxi h, 0fffeh
         call get_hmem_
         mov e, m
         inx h
@@ -1123,7 +1112,7 @@ emulate_:
         xchg
         shld .cpu.pc
 ;                continue;
-        jmp .gothl_loop
+        jmp .big_loop
 ;            }
 ; case 0x01: case 0x21: case 0x41: case 0x61: case 0xc1: case 0xe1: /* ora/and/eor/adc/cmp/sbc (a8, x) */
 .94:
@@ -1412,19 +1401,20 @@ emulate_:
 .br_complete:
 ; /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
 ; cpu.pc += ( 2 + sign_extend( get_byte( cpu.pc + 1 ), 7 ) );
-        mvi d, 0
-        lxi h, 128
-        call .xr
+        mvi a, 80h
+        xra e
+        mov l, a
+        mvi h, 0
         inx h
         inx h
-        lxi d, -128
+        lxi d, 0ff80h
         dad d
         xchg
         lhld .cpu.pc
         dad d
         shld .cpu.pc
 ;                continue;
-        jmp .gothl_loop
+        jmp .big_loop
 ;            }
 ;            case 0x18: { cpu.fCarry = false; break; } /* clc */
 .172:
@@ -1457,7 +1447,7 @@ emulate_:
         pop h ; restore op1 and op2
         shld .cpu.pc
 ;                continue;
-        JMP .gothl_loop
+        JMP .big_loop
 ;            }
 ; case 0x24: { op_bit( get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* bit a8 NVZ */
 .174:
@@ -1506,7 +1496,7 @@ emulate_:
         mov l, e
         shld .cpu.pc
 ;                continue;
-        jmp .gothl_loop
+        jmp .big_loop
 ;            }
 ; case 0x48: { push( cpu.a ); break; }                      /* pha */
 .179:
@@ -1524,7 +1514,7 @@ emulate_:
 .180:
         xchg
         shld .cpu.pc
-        jmp .gothl_loop
+        jmp .big_loop
 ;            case 0x58: { cpu.fInterruptDisable = false; break; }      /* cli */
 .181:
         xra a
@@ -1552,7 +1542,7 @@ emulate_:
         inx h
         shld .cpu.pc
 ;                continue;
-        jmp .gothl_loop
+        jmp .big_loop
 ;            }
 ;            case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; } /* pla NZ */
 .183:
@@ -1587,7 +1577,7 @@ emulate_:
         mov h, m
         mov l, e
         shld .cpu.pc
-        jmp .gothl_loop
+        jmp .big_loop
 ; case 0x78: { cpu.fInterruptDisable = true; break; } /* sei */
 .189:
         mvi a, 1
@@ -1868,7 +1858,7 @@ emulate_:
         ani -5
         sta g_State_
 ;                        cpu.pc = get_word( 0xfffc );
-        lxi h, -4
+        lxi h, 0fffch
         call get_hmem_
         mov e, m
         inx h
@@ -1876,7 +1866,7 @@ emulate_:
         mov l, e
         shld .cpu.pc
 ;                        continue;
-        jmp .gothl_loop
+        jmp .big_loop
 ;                    }
 ;                }
 ;
@@ -2110,7 +2100,7 @@ emulate_:
         dad b
         shld .cpu.pc
 ;    }
-        jmp .gothl_loop
+        jmp .big_loop
 .90:
 ;_all_done:
 .all_done:
@@ -2154,13 +2144,13 @@ emulate_:
         DW .266, .135, .268, .268, .268, .141, .254, .267   ; f8
 
 .unk_op:
-        DB 'u', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'm', 'o', 's', '6', '5', '0', '2'
+        DB 'u', 'n', 'k', 'n', 'o', 'w', 'n', ' ', '6', '5', '0', '2'
         DB ' ', 'o', 'p', 'c', 'o', 'd', 'e', ' ', '%', '0', '2', 'x', 10, 0
 
 .bad_addr_err:
         DB 't', 'h', 'e', ' ', 'a', 'p', 'p', 'l', 'e', ' ', '1', ' '
-        DB 'a', 'p', 'p', ' ', 'r', 'e', 'f', 'e', 'r', 'e', 'n', 'c', 'e', 'd', ' '
-        DB 't', 'h', 'e', ' ', 'i', 'n', 'v', 'a', 'l', 'i', 'd', ' '
+        DB 'a', 'p', 'p', ' ', 'u', 's', 'e', 'd'
+        DB 'a', 'n', ' ', 'i', 'n', 'v', 'a', 'l', 'i', 'd', ' '
         DB 'a', 'd', 'd', 'r', 'e', 's', 's', ' ', '%', '0', '4', 'x', 10, 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
@@ -2182,10 +2172,6 @@ emulate_:
         extrn   m_ff00_
         extrn   m_e000_
         extrn   m_d000_
-        extrn   .xr
-        extrn   .an
-        extrn   .eq
-        extrn   .ne
         extrn   .ug
         extrn   .uf
         extrn   .ur
