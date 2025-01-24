@@ -208,44 +208,6 @@ power_on_:
 ;}
         ret
 
-;static uint8_t ins_len_6502[ 256 ] =
-    DSEG
-ins_len__:
-    DB 2, 2, 0, 0, 0, 2, 2, 0  ; 00
-    DB 1, 2, 1, 0, 0, 3, 3, 1  ; 08
-    DB 2, 2, 0, 0, 0, 2, 2, 0  ; 10
-    DB 1, 3, 0, 0, 0, 3, 3, 0  ; 18
-    DB 3, 2, 0, 0, 2, 2, 2, 0  ; 20
-    DB 1, 2, 1, 0, 3, 3, 3, 0  ; 28
-    DB 2, 2, 0, 0, 0, 2, 2, 0  ; 30
-    DB 1, 3, 0, 0, 0, 3, 3, 0  ; 38
-    DB 1, 2, 0, 0, 0, 2, 2, 0  ; 40
-    DB 1, 2, 1, 0, 3, 3, 3, 0  ; 48
-    DB 2, 2, 0, 0, 0, 2, 2, 0  ; 50
-    DB 1, 3, 0, 0, 0, 3, 3, 0  ; 58
-    DB 1, 2, 0, 0, 0, 2, 2, 0  ; 60
-    DB 1, 2, 1, 0, 3, 3, 3, 0  ; 68
-    DB 2, 2, 0, 0, 0, 2, 2, 0  ; 70
-    DB 1, 3, 0, 0, 0, 3, 3, 0  ; 78
-    DB 0, 2, 0, 0, 2, 2, 2, 0  ; 80
-    DB 1, 0, 1, 0, 3, 3, 3, 0  ; 88
-    DB 2, 2, 0, 0, 2, 2, 2, 0  ; 90
-    DB 1, 3, 1, 0, 0, 3, 0, 0  ; 98
-    DB 2, 2, 2, 0, 2, 2, 2, 0  ; a0
-    DB 1, 2, 1, 0, 3, 3, 3, 0  ; a8
-    DB 2, 2, 0, 0, 2, 2, 2, 0  ; b0
-    DB 1, 3, 1, 0, 3, 3, 3, 0  ; b8
-    DB 2, 2, 0, 0, 2, 2, 2, 0  ; c0
-    DB 1, 2, 1, 0, 3, 3, 3, 0  ; c8
-    DB 2, 2, 0, 0, 0, 2, 2, 0  ; d0
-    DB 1, 3, 0, 0, 0, 3, 3, 0  ; d8
-    DB 2, 2, 0, 0, 2, 2, 2, 0  ; e0
-    DB 1, 2, 1, 0, 3, 3, 3, 0  ; e8
-    DB 2, 2, 0, 0, 0, 2, 2, 0  ; f0
-    DB 1, 3, 0, 0, 0, 3, 3, 1  ; f8
-
-    CSEG
-
 ;uint8_t op_brotate( op, val ) uint8_t op; uint8_t val;
 ; op is in c and val is in b. return value is in a
         PUBLIC op_brotate
@@ -934,7 +896,6 @@ emulate_:
 ;     mvi d, 1
 ;     call 5
 
-;
 ;    for (;;)
 ;    {
 ;        op = get_byte( cpu.pc );
@@ -958,19 +919,19 @@ emulate_:
 ;            CALL render_f_
 ;            PUSH H
 ;            LDA .cpu.sp
-;            MOV L,A
-;            MVI     H,0
+;            MOV L, A
+;            MVI H, 0
 ;            PUSH H
 ;            LDA .cpu.y
-;            MOV L,A
+;            MOV L, A
 ;            PUSH H
 ;            LDA .cpu.x
-;            MOV L,A
+;            MOV L, A
 ;            PUSH H
 ;            LDA .cpu.a
-;            MOV L,A
+;            MOV L, A
 ;            PUSH H
-;            MOV L,c
+;            MOV L, c
 ;            PUSH H
 ;            LHLD .cpu.pc
 ;            PUSH H
@@ -978,10 +939,10 @@ emulate_:
 ;            PUSH H
 ;            CALL printf_
 ;            XCHG
-;            LXI H,16
+;            LXI H, 16
 ;            DAD SP
 ;            SPHL
-;            pop d ; restore registers d and e
+;            pop d ; restore registers d and e (op1 and op2)
 ;            pop b ; restore register c (the opcode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
 
@@ -1059,6 +1020,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
+        mvi c, 2
         jmp .next_pc
 ;            }
 ; case 0x05: case 0x25: case 0x45: case 0x65: case 0xc5: case 0xe5: /* ora/and/eor/adc/cmp/sbc a8 */
@@ -1077,6 +1039,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
+        mvi c, 2
         jmp .next_pc
 ;            }
 ; case 0x09: case 0x29: case 0x49: case 0x69: case 0xc9: case 0xe9: /* ora/and/eor/adc/cmp/sbc #d8 */
@@ -1091,6 +1054,7 @@ emulate_:
         mov b, e
         call op_math_
 ;                break;
+        mvi c, 2
         jmp .next_pc
 ;            }
 ; case 0x0d: case 0x2d: case 0x4d: case 0x6d: case 0xcd: case 0xed: /* ora/and/eor/adc/cmp/sbc a16 */
@@ -1108,6 +1072,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
+        mvi c, 3
         jmp .next_pc
 ;            }
 ; case 0x11: case 0x31: case 0x51: case 0x71: case 0xd1: case 0xf1: /* ora/and/eor/adc/cmp/sbc (a8), y */
@@ -1134,6 +1099,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
+        mvi c, 2
         jmp .next_pc
 ;            }
 ; case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5: /* ora/and/eor/adc/cmp/sbc a8, x */  
@@ -1153,6 +1119,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
+        mvi c, 2
         jmp .next_pc
 ;            }
 ; case 0x19: case 0x39: case 0x59: case 0x79: case 0xd9: case 0xf9: /* ora/and/eor/adc/cmp/sbc a16, y */
@@ -1172,6 +1139,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
+        mvi c, 3
         jmp .next_pc
 ;            }
 ; case 0x1d: case 0x3d: case 0x5d: case 0x7d: case 0xdd: case 0xfd:
@@ -1192,6 +1160,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
+        mvi c, 3
         jmp .next_pc
 ;            }
 ; case 0x06: case 0x26: case 0x46: case 0x66: { address = get_byte( cpu.pc + 1 ); goto _rot_complete; }
@@ -1243,11 +1212,19 @@ emulate_:
         call op_brotate   ; does not modify hl
         mov m, a
 ;                break;
+        mov a, c   ; if the low nibble in op is e, it's 3 bytes long else 2
+        ani 0fh
+        cpi 0eh
+        mvi c, 2
+        jne .rot_done
+        inr c
+  .rot_done
         jmp .next_pc
 ;            }
-;            case 0x08: { op_php(); break; }                    
+; case 0x08: { op_php(); break; }                    
 .159:
         call op_php_
+        mvi c, 1
         jmp .next_pc
 ;                        /* php */
 ;            case OP_HOOK:                                      
@@ -1271,42 +1248,49 @@ emulate_:
         lda .cpu.fNegative
         ora a
         jz .br_complete
+        mvi c, 2
         jmp .next_pc
 ; case 0x30: { if ( cpu.fNegative ) goto _branch_complete; break; }  /* bmi */
 .165:
         lda .cpu.fNegative
         ora a
         jnz .br_complete
+        mvi c, 2
         jmp .next_pc
 ; case 0x50: { if ( !cpu.fOverflow ) goto _branch_complete; break; } /* bvc */
 .166:
         lda .cpu.fOverflow
         ora a
         jz .br_complete
+        mvi c, 2
         jmp .next_pc
 ; case 0x70: { if ( cpu.fOverflow ) goto _branch_complete; break; }  /* bvs */
 .167:
         lda .cpu.fOverflow
         ora a
         jnz .br_complete
+        mvi c, 2
         jmp .next_pc
 ; case 0x90: { if ( !cpu.fCarry ) goto _branch_complete; break; }    /* bcc */
 .168:
         lda .cpu.fCarry
         ora a
         jz .br_complete
+        mvi c, 2
         jmp .next_pc
 ; case 0xb0: { if ( cpu.fCarry ) goto _branch_complete; break; }     /* bcs */
 .169:
         lda .cpu.fCarry
         ora a
         jnz .br_complete
+        mvi c, 2
         jmp .next_pc
 ; case 0xd0: { if ( !cpu.fZero ) goto _branch_complete; break; }     /* bne */
 .170:
         lda .cpu.fZero
         ora a
         jz .br_complete
+        mvi c, 2
         jmp .next_pc
 ; case 0xf0:                                                         /* beq */
 .171:
@@ -1315,7 +1299,9 @@ emulate_:
 ;                    break;                                     
         lda .cpu.fZero
         ora a
-        jz .next_pc
+        jnz .br_complete
+        mvi c, 2
+        jmp .next_pc
 ;          
 ;_branch_complete:
 .br_complete:
@@ -1340,6 +1326,7 @@ emulate_:
 .172:
         xra a
         sta .cpu.fCarry
+        mvi c, 1
         jmp .next_pc
 ; case 0x20: /* jsr a16 */
 .173:
@@ -1375,10 +1362,12 @@ emulate_:
         call get_hmem_
         mov a, m
         call op_bit_
+        mvi c, 2
         jmp .next_pc
-;            case 0x28: { op_pop_pf(); break; }                 
+; case 0x28: { op_pop_pf(); break; }                 
 .175:
         call op_pop_p_
+        mvi c, 1
         jmp .next_pc
 ;                        /* plp NZCIDV */
 ; case 0x2c: { op_bit( get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* bit a16 NVZ */
@@ -1387,11 +1376,13 @@ emulate_:
         call get_hmem_
         mov a, m
         call op_bit_
+        mvi c, 3
         jmp .next_pc
 ; case 0x38: { cpu.fCarry = true; break; }                  /* sec */
 .177:
         mvi a, 1
         sta .cpu.fCarry
+        mvi c, 1
         jmp .next_pc
 ; case 0x40:                                                /* rti */
 .178:
@@ -1419,16 +1410,17 @@ emulate_:
 ;            }
 ; case 0x48: { push( cpu.a ); break; }                      /* pha */
 .179:
-         lda .cpu.sp
-         lxi d, m_0000_+256
-         mov l, a
-         dcr a
-         sta .cpu.sp
-         mvi h, 0
-         dad d
-         lda .cpu.a
-         mov m, a
-         jmp .next_pc
+        lda .cpu.sp
+        lxi d, m_0000_+256
+        mov l, a
+        dcr a
+        sta .cpu.sp
+        mvi h, 0
+        dad d
+        lda .cpu.a
+        mov m, a
+        mvi c, 1
+        jmp .next_pc
 ; case 0x4c: { cpu.pc = get_word( cpu.pc + 1 ); continue; } /* jmp a16 */
 .180:
         xchg
@@ -1438,6 +1430,7 @@ emulate_:
 .181:
         xra a
         sta .cpu.fInterruptDisable
+        mvi c, 1
         jmp .next_pc
 ;            case 0x60:                                                /* rts */
 .182:
@@ -1475,6 +1468,7 @@ emulate_:
         mov a, m
         sta .cpu.a
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0x6a: case 0x4a: case 0x2a: case 0x0a: { cpu.a = op_rotate( op, cpu.a ); break; }
 ;      /* asl, rol, lsr, ror */
@@ -1486,6 +1480,7 @@ emulate_:
         mov b, a
         call op_brotate
         sta .cpu.a
+        mvi c, 1
         jmp .next_pc
 ; case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); continue; } /* jmp (a16) */
 .188:
@@ -1501,6 +1496,7 @@ emulate_:
 .189:
         mvi a, 1
         sta .cpu.fInterruptDisable
+        mvi c, 1
         jmp .next_pc
 ; case 0x81: { address = get_word( (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ) ); goto _st_complete; }
 ;      /* stx (a8, x) */
@@ -1515,6 +1511,7 @@ emulate_:
         inx h
         mov h, m
         mov l, e
+        mvi d, 2
         jmp .st_complete
 ; case 0x84: case 0x85: case 0x86: { address = get_byte( cpu.pc + 1 ); goto _st_complete; }
 ;      /* sty/sta/stx a8 */
@@ -1523,6 +1520,7 @@ emulate_:
 .194:
         mov l, e
         mvi h, 0
+        mvi d, 2
         jmp .st_complete
 ; case 0x8c: case 0x8d: case 0x8e: { address = get_word( cpu.pc + 1 ); goto _st_complete; }
 ;      /* sty/sta/stx a16 */
@@ -1530,6 +1528,7 @@ emulate_:
 .196:
 .197:
         xchg
+        mvi d, 3
         jmp .st_complete
 ; case 0x91: { address = cpu.y + get_word( get_byte( cpu.pc + 1 ) ); goto _st_complete; }
 ;      /* sta (a8), y */
@@ -1544,6 +1543,7 @@ emulate_:
         mov l, a
         mvi h, 0
         dad d
+        mvi d, 2
         jmp .st_complete
 ; case 0x94: case 0x95: { address = (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.x ); goto _st_complete; }
 ;      /* sta/sty a8, x */
@@ -1554,6 +1554,7 @@ emulate_:
         add l
         mov l, a
         mvi h, 0
+        mvi d, 2
         jmp .st_complete
 ; case 0x96: { address = (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.y ); goto _st_complete; }
 ;      /* stx a8, y */
@@ -1563,6 +1564,7 @@ emulate_:
         add l
         mov l, a
         mvi h, 0
+        mvi d, 2
         jmp .st_complete
 ; case 0x99: { address = get_word( cpu.pc + 1 ) + cpu.y; goto _st_complete; }
 ; /* sta a16, y */
@@ -1571,6 +1573,7 @@ emulate_:
         mov l, a
         mvi h, 0
         dad d
+        mvi d, 3
         jmp .st_complete
 ; case 0x9d: /* sta a16, x */
 .203:
@@ -1581,6 +1584,7 @@ emulate_:
         mov l, a
         mvi h, 0
         dad d
+        mvi d, 3
 ;_st_complete:
 .st_complete:
 ;                set_byte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
@@ -1589,7 +1593,7 @@ emulate_:
         jnc .204
         lda .cpu.a
         mov b, a
-        jmp .205
+        jmp .207
 .204:
         rrc
         jnc .206
@@ -1600,7 +1604,7 @@ emulate_:
         lda .cpu.y
         mov b, a
 .207:
-.205:
+        mov c, d
         push h
         call get_hmem_
         mov m, b
@@ -1626,23 +1630,27 @@ emulate_:
         dcr a
         sta .cpu.y
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0x8a: { cpu.a = cpu.x; set_nz( cpu.a ); break; } /* txa */
 .210:
         lda .cpu.x
         sta .cpu.a
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0x98: { cpu.a = cpu.y; set_nz( cpu.a ); break; } /* tya */
 .211:
         lda .cpu.y
         sta .cpu.a
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0x9a: { cpu.sp = cpu.x; break; }                 /* txs no flags set */
 .212:
         lda .cpu.x
         sta .cpu.sp
+        mvi c, 1
         jmp .next_pc
 ; case 0xa0: case 0xa2: case 0xa9: { address = cpu.pc + 1; goto _ld_complete; }
 ;      /* ldy/ldx/lda #d8 */
@@ -1651,6 +1659,7 @@ emulate_:
 .215:
         lhld .cpu.pc
         inx h
+        mvi b, 2
         jmp .ld_complete
 ; case 0xa1: { address = get_word( (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.x ) ); goto _ld_complete; }
 ;      /* lda (a8, x) */
@@ -1665,6 +1674,7 @@ emulate_:
         inx h
         mov h, m
         mov l, e
+        mvi b, 2
         jmp .ld_complete
 ; case 0xa4 : case 0xa5: case  0xa6: { address = get_byte( cpu.pc + 1 ); goto _ld0_complete; }
 ;      /* ldy/lda/ldx a8 */
@@ -1673,6 +1683,7 @@ emulate_:
 .220:
         mov l, e
         mvi h, 0
+        mvi b, 2
         jmp .ld0_complete
 ; case 0xac: case 0xad: case 0xae:{ address = get_word( cpu.pc + 1 ); goto _ld_complete; }
 ;      /* ldy/lda/ldx a16 */
@@ -1680,6 +1691,7 @@ emulate_:
 .223:
 .224:
         xchg
+        mvi b, 3
         jmp .ld_complete
 ; case 0xb1: { address = cpu.y + get_word( (uint16_t) get_byte( cpu.pc + 1 ) ); goto _ld_complete; }
 ;      /* lda (a8), y */
@@ -1694,6 +1706,7 @@ emulate_:
         mov l, a
         mvi h, 0
         dad d
+        mvi b, 2
         jmp .ld_complete
 ; case 0xb4: case 0xb5: { address = (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.x ); goto _ld0_complete; }
 ;      /* ldy/lda a8, x */
@@ -1703,6 +1716,7 @@ emulate_:
         add e
         mov l, a
         mvi h, 0
+        mvi b, 2
         jmp .ld0_complete
 ; case 0xb6: { address = (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.y ); goto _ld0_complete; }
 ;     /* ldx a8, y */
@@ -1711,6 +1725,7 @@ emulate_:
         mov l, a
         dad d
         mvi h, 0
+        mvi b, 2
         jmp .ld0_complete
 ; case 0xb9 : case 0xbe: { address = get_word( cpu.pc + 1 ) + cpu.y; goto _ld_complete; }
 ;      /* lda/ldx a16, y */
@@ -1720,6 +1735,7 @@ emulate_:
         mov l, a
         mvi h, 0
         dad d
+        mvi b, 3
         jmp .ld_complete
 ; case 0xbc: case 0xbd: /* ldy/lda a16, x */
 .231:
@@ -1730,6 +1746,7 @@ emulate_:
         mov l, a
         mvi h, 0
         dad d
+        mvi b, 3
 ;       
 ;_ld_complete:   /* load */
 .ld_complete:
@@ -1747,6 +1764,7 @@ emulate_:
         jnz .ld0_complete
  .ld_load:
 ;                    set_byte( address, m_load( address ) );
+        push b
         push h
         push h
         call m_load_
@@ -1757,6 +1775,7 @@ emulate_:
         call get_hmem_
         mov m, b
         pop h
+        pop b
 ;_gstate_set:
 .161:
 ;                    if ( g_State & stateEndEmulation )
@@ -1792,7 +1811,7 @@ emulate_:
 ;                val = get_byte( address );
         call get_hmem_
         mov a, m
-        mov b, a
+        mov d, a
 ;                set_nz( val );
         call aset_nz_
 ;                if ( op & 1 )
@@ -1800,23 +1819,26 @@ emulate_:
         mov a, c
         rrc
         jnc .236
-        mov a, b
+        mov a, d
         sta .cpu.a
+        mov c, b
         jmp .next_pc
 ;                else if ( op & 2 )
 .236:
         rrc
         jnc .238
 ;                    cpu.x = val;
-        mov a, b
+        mov a, d
         sta .cpu.x
-        JMP .next_pc
+        mov c, b
+        jmp .next_pc
 .238:
 ;                else
 ;                    cpu.y = val;
-        mov a, b
+        mov a, d
         sta .cpu.y
 ;                break;
+        mov c, b
         jmp .next_pc
 ;            }
 ; case 0xa8: { cpu.y = cpu.a; set_nz( cpu.y ); break; }                      /* tay */
@@ -1824,29 +1846,34 @@ emulate_:
         lda .cpu.a
         sta .cpu.y
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0xaa: { cpu.x = cpu.a; set_nz( cpu.x ); break; }                      /* tax */
 .241:
         lda .cpu.a
         sta .cpu.x
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0xb8: { cpu.fOverflow = false; break; }                               /* clv */
 .242:
         xra a
         sta .cpu.fOverflow
+        mvi c, 1
         jmp .next_pc
 ; case 0xba: { cpu.x = cpu.sp; set_nz( cpu.x ); break; }                     /* tsx */
 .243:
         lda .cpu.sp
         sta .cpu.x
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0xc0: { op_cmp( cpu.y, get_byte( cpu.pc + 1 ) ); break; }             /* cpy #d8 */
 .244:
         mov b, e
         lda .cpu.y
         call op_bcmp_
+        mvi c, 2
         jmp .next_pc
 ; case 0xc4: { op_cmp( cpu.y, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpy a8 */
 .245:
@@ -1856,6 +1883,7 @@ emulate_:
         mov b, m
         lda .cpu.y
         call op_bcmp_
+        mvi c, 2
         jmp .next_pc
 ; case 0xc6 : case 0xe6: { address = get_byte( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a8 */
 .246:
@@ -1865,6 +1893,7 @@ emulate_:
         call get_hmem_
         mov l, m
         mvi h, 0
+        mvi b, 2
         jmp .crement_complete
 ; case 0xce : case 0xee: { address = get_word( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a16 */
 .249:
@@ -1876,6 +1905,7 @@ emulate_:
         inx h
         mov h, m
         mov l, e
+        mvi b, 3
         jmp .crement_complete
 ; case 0xd6 : case 0xf6: { address = (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ); goto _crement_complete; }
 ;      /* inc/dec a8, x */
@@ -1888,9 +1918,10 @@ emulate_:
         add m
         mov l, a
         mvi h, 0
+        mvi b, 2
         jmp .crement_complete
 ;
-;            case 0xde : case 0xfe: /* inc/dec a16, x */
+; case 0xde : case 0xfe: /* inc/dec a16, x */
 .253:
 .254:
 ;            {
@@ -1899,6 +1930,7 @@ emulate_:
         mov l, a
         mvi h, 0
         dad d
+        mvi b, 3
 ;_crement_complete:
 .crement_complete:
 ;                pb = get_mem( address );
@@ -1918,6 +1950,7 @@ emulate_:
         mov a, m
         call aset_nz_
 ;                break;
+        mov c, b
         jmp .next_pc
 ;            }
 ; case 0xc8: { cpu.y++; set_nz( cpu.y ); break; } /* iny */
@@ -1926,6 +1959,7 @@ emulate_:
         inr a
         sta .cpu.y
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0xca: { cpu.x--; set_nz( cpu.x ); break; } /* dex */
 .258:
@@ -1933,6 +1967,7 @@ emulate_:
         dcr a
         sta .cpu.x
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
 ; case 0xcc: { op_cmp( cpu.y, get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* cpy a16 */
 .259:
@@ -1941,12 +1976,14 @@ emulate_:
         mov b, m
         lda .cpu.y
         call op_bcmp_
+        mvi c, 3
         jmp .next_pc
 ; case 0xd8: { cpu.fDecimal = false; break; }                    /* cld */
 .260:
         xra a
         sta .cpu.fDecimal
-        JMP .next_pc
+        mvi c, 1
+        jmp .next_pc
 ; case 0xe0: { op_cmp( cpu.x, get_byte( cpu.pc + 1 ) ); break; } /* cpx #d8 */
 .261:
         lhld .cpu.pc
@@ -1955,6 +1992,7 @@ emulate_:
         mov b, m
         lda .cpu.x
         call op_bcmp_
+        mvi c, 2
         jmp .next_pc
 ; case 0xe4: { op_cmp( cpu.x, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpx a8 */
 .262:
@@ -1967,6 +2005,7 @@ emulate_:
         mov b, m
         lda .cpu.x
         call op_bcmp_
+        mvi c, 2
         jmp .next_pc
 ; case 0xe8: { cpu.x++; set_nz( cpu.x ); break; } /* inx */
 .263:
@@ -1974,9 +2013,11 @@ emulate_:
         inr a
         sta .cpu.x
         call aset_nz_
+        mvi c, 1
         jmp .next_pc
-;            case 0xea: { break; } /* nop */
+; case 0xea: { break; } /* nop */
 .264:
+        mvi c, 1
         jmp .next_pc
 ;
 ; case 0xec: { op_cmp( cpu.x, get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* cpx a16 */
@@ -1986,11 +2027,13 @@ emulate_:
         mov b, m
         lda .cpu.x
         call op_bcmp_
+        mvi c, 3
         jmp .next_pc
 ; case 0xf8: { cpu.fDecimal = true; break; } /* sed */
 .266:
         mvi a, 1
         sta .cpu.fDecimal
+        mvi c, 1
         jmp .next_pc
 ; case 0xff: { m_halt(); goto _all_done; } /* halt */
 .267:
@@ -2006,11 +2049,7 @@ emulate_:
 ;        }
         jmp .next_pc
 .next_pc:
-;        cpu.pc += ins_len_6502[ op ];
-        mvi b, 0
-        lxi h, ins_len__
-        dad b
-        mov c, m
+        mvi b, 0        ; instruction length is in c
         lhld .cpu.pc
         dad b
         shld .cpu.pc
