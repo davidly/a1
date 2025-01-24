@@ -27,7 +27,7 @@
 .cpu.sp equ cpu_ + 3
 .cpu.pc equ cpu_ + 4
 .cpu.pf equ cpu_ + 6
-.cpu.fNegative equ cpu_ + 7
+.cpu.fNegative equ cpu_ + 7   ; for all flags: false if 0 and true if at least bit 0 is set
 .cpu.fOverflow equ cpu_ + 8
 .cpu.fDecimal equ cpu_ + 9
 .cpu.fInterruptDisable equ cpu_ + 10
@@ -181,9 +181,9 @@ aset_nz_:
         sta .cpu.fZero      ; set zero flag to true
         ret
   _anz_set:
-        ani 128
+        ani 80h
         jz _anz_pos
-        inr a
+        inr a               ; high bit will be set too, but that's OK
   _anz_pos:
         sta .cpu.fNegative  ; set negative flag
         xra a
@@ -267,9 +267,8 @@ op_brotate:
 ;        cpu.fCarry = !! ( 0x80 & val );
         mov a, b
         ani 80h
-        mvi a, 0
         jz .r0_a
-        inr a
+        inr a         ; high bit will be set too, but that's OK
   .r0_a
         sta .cpu.fCarry
 ;        val <<= 1;
@@ -291,7 +290,7 @@ op_brotate:
         ani 80h
         mvi a, 0
         jz .r1_a
-        inr a
+        inr a         ; high bit will be set too, but that's OK
   .r1_a
         sta .cpu.fCarry
 ;        val <<= 1;
@@ -329,7 +328,7 @@ op_brotate:
 .rot_ror:
 ;    {
 ;        oldCarry = cpu.fCarry;
-        LDA .cpu.fCarry
+        lda .cpu.fCarry
         mov e, a
 ;        cpu.fCarry = ( val & 1 );
         mov a, b
@@ -408,8 +407,6 @@ op_bit_:
         sta .cpu.fZero
         ret
 
-; this compiler-generated implementation is big and slow but rarely gets called,
-; so I didn't optimize it much.
 ;void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
         PUBLIC op_bcd_m_
 op_bcd_m_:
@@ -464,7 +461,7 @@ op_bcd_m_:
         sta .bcdrhi
 ;    cpu.fZero = false;
         xra a
-        STA .cpu.fZero
+        sta .cpu.fZero
 ;    ad = ahi * 10 + alo;
 .39:
         lda .bcdahi
@@ -492,9 +489,9 @@ op_bcd_m_:
         sta .bcdrd
 ;    if ( 7 == math )
 ;    {
-        LXI H, 2
-        DAD SP
-        MOV a, M
+        lxi h, 2
+        dad sp
+        mov a, m
         cpi 7
         jne .41
 ;        if ( !cpu.fCarry )
@@ -1241,11 +1238,9 @@ emulate_:
 .rot_complete:
 ;                pb = get_mem( address ); /* avoid two calls to get_mem */
         call get_hmem_
-        push h ; save pb
 ;                *pb = op_rotate( op, *pb );
         mov b, m
-        call op_brotate
-        pop h
+        call op_brotate   ; does not modify hl
         mov m, a
 ;                break;
         jmp .next_pc
@@ -1341,12 +1336,12 @@ emulate_:
 ;                continue;
         jmp .big_loop
 ;            }
-;            case 0x18: { cpu.fCarry = false; break; } /* clc */
+; case 0x18: { cpu.fCarry = false; break; } /* clc */
 .172:
         xra a
         sta .cpu.fCarry
         jmp .next_pc
-;            case 0x20: /* jsr a16 */
+; case 0x20: /* jsr a16 */
 .173:
 ;            {
 ;                push_word( cpu.pc + 2 );
@@ -1357,10 +1352,9 @@ emulate_:
         push h
         lda .cpu.sp
         dcr a
-        sta .cpu.sp
         mov l, a
         mvi h, 0
-        lxi d, m_0000_+256
+        lxi d, m_0000_ + 100h
         dad d
         pop d
         mov m, e
@@ -1372,7 +1366,7 @@ emulate_:
         pop h ; restore op1 and op2
         shld .cpu.pc
 ;                continue;
-        JMP .big_loop
+        jmp .big_loop
 ;            }
 ; case 0x24: { op_bit( get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* bit a8 NVZ */
 .174:
@@ -1591,15 +1585,14 @@ emulate_:
 .st_complete:
 ;                set_byte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
         mov a, c
-        ani 1
-        jz .204
+        rrc
+        jnc .204
         lda .cpu.a
         mov b, a
         jmp .205
 .204:
-        mov a, c
-        ani 2
-        jz .206
+        rrc
+        jnc .206
         lda .cpu.x
         mov b, a
         jmp .207
@@ -1747,7 +1740,6 @@ emulate_:
         mov a, h
         cpi 0d0h
         jnz .ld0_complete
-
         mov a, l
         cpi 10h
         jz .ld_load
@@ -1803,26 +1795,24 @@ emulate_:
         mov b, a
 ;                set_nz( val );
         call aset_nz_
-;        
 ;                if ( op & 1 )
 ;                    cpu.a = val;
         mov a, c
-        ani 1
-        jz .236
+        rrc
+        jnc .236
         mov a, b
         sta .cpu.a
-;                else if ( op & 2 )
         jmp .next_pc
+;                else if ( op & 2 )
 .236:
+        rrc
+        jnc .238
 ;                    cpu.x = val;
-        mov a, c
-        ani 2
-        jz .238
         mov a, b
         sta .cpu.x
-;                else
         JMP .next_pc
 .238:
+;                else
 ;                    cpu.y = val;
         mov a, b
         sta .cpu.y
@@ -2097,10 +2087,6 @@ emulate_:
         extrn   m_ff00_
         extrn   m_e000_
         extrn   m_d000_
-        extrn   .ug
-        extrn   .uf
-        extrn   .ur
-        extrn   .sb
         extrn   .ml
         extrn   .ud
         extrn   .um
