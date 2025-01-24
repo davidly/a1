@@ -957,9 +957,8 @@ emulate_:
         mov l, a
         pchl
 ;        {
-;            case 0x00:                                         
+; case 0x00:  /* brk */                                       
 .93:
-;                        /* brk */
 ;            {
 ;                push_word( cpu.pc + 2 );
         lhld .cpu.pc
@@ -1221,20 +1220,16 @@ emulate_:
   .rot_done
         jmp .next_pc
 ;            }
-; case 0x08: { op_php(); break; }                    
+; case 0x08: { op_php(); break; } /* php */
 .159:
         call op_php_
         mvi c, 1
         jmp .next_pc
-;                        /* php */
-;            case OP_HOOK:                                      
+; case OP_HOOK:
 .160:
-;                        /* hook */
 ;            {
 ;                op = m_hook();
         call m_hook_
-;        mov a, l
-;        sta .op
 ;                if ( 0 != g_State )
 ;                    goto _gstate_set;
         lda g_State_
@@ -1364,12 +1359,11 @@ emulate_:
         call op_bit_
         mvi c, 2
         jmp .next_pc
-; case 0x28: { op_pop_pf(); break; }                 
+; case 0x28: { op_pop_pf(); break; } /* plp NZCIDV */
 .175:
         call op_pop_p_
         mvi c, 1
         jmp .next_pc
-;                        /* plp NZCIDV */
 ; case 0x2c: { op_bit( get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* bit a16 NVZ */
 .176:
         xchg
@@ -1426,13 +1420,13 @@ emulate_:
         xchg
         shld .cpu.pc
         jmp .big_loop
-;            case 0x58: { cpu.fInterruptDisable = false; break; }      /* cli */
+; case 0x58: { cpu.fInterruptDisable = false; break; }      /* cli */
 .181:
         xra a
         sta .cpu.fInterruptDisable
         mvi c, 1
         jmp .next_pc
-;            case 0x60:                                                /* rts */
+; case 0x60:                                                /* rts */
 .182:
 ;            {
 ;_op_rts:
@@ -1456,7 +1450,7 @@ emulate_:
 ;                continue;
         jmp .big_loop
 ;            }
-;            case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; } /* pla NZ */
+; case 0x68: { cpu.a = pop(); set_nz( cpu.a ); break; } /* pla NZ */
 .183:
         lda .cpu.sp
         inr a
@@ -1978,7 +1972,7 @@ emulate_:
         call op_bcmp_
         mvi c, 3
         jmp .next_pc
-; case 0xd8: { cpu.fDecimal = false; break; }                    /* cld */
+; case 0xd8: { cpu.fDecimal = false; break; } /* cld */
 .260:
         xra a
         sta .cpu.fDecimal
@@ -2130,3 +2124,4 @@ emulate_:
         extrn   .ud
         extrn   .um
         END
+
