@@ -78,7 +78,6 @@ ram_size equ 4096 * 8
 ;static uint8_t m_0000[ ram_size ];
     bss m_0000_, ram_size
 ;uint8_t * mem_base[ 16 ] =
-        public  mem_base_
 mem_base_:
 ;{
         DW m_0000_          ; 0000
@@ -100,7 +99,6 @@ mem_base_:
         CSEG
 ;
 ;void bad_address( address ) uint16_t address;
-        PUBLIC bad_addr_
 bad_addr_:
 ;{
 ;    printf( "the apple 1 app referenced the invalid address %04x\n", address );
@@ -158,7 +156,6 @@ get_mem_:
         ret
 
 ; this version has address in HL and is called from this file
-        PUBLIC get_hmem_
 get_hmem_:
         push h
         mov a, h           ; use the top nibble
@@ -187,7 +184,6 @@ get_hmem_:
 ;        cpu.fZero = !x;
 ;    }
 ; except that x is passed in the a register, not on the stack
-        PUBLIC aset_nz_
 aset_nz_:
         cpi 0
         jnz _anz_set
@@ -225,7 +221,6 @@ power_on_:
 
 ;uint8_t op_brotate( op, val ) uint8_t op; uint8_t val;
 ; op is in c and val is in b. return value is in a
-        PUBLIC op_brotate
 op_brotate:
 ;{
 ;
@@ -337,17 +332,17 @@ op_brotate:
 
 ;void op_bcmp( lhs, rhs ) uint8_t lhs; uint8_t rhs;
 ; lhs is in a, rhs is in b (not on the stack)
-        PUBLIC op_bcmp_
 op_bcmp_:
 ;{
 ;    uint8_t result;
 ;    result = (uint8_t) ( (uint16_t) lhs - (uint16_t) rhs );
 ;    cpu.fCarry = ( lhs >= rhs );
-        sub b
+        sub b         ; carry cleared on borow
         mov b, a
-        mvi a, 0
-        cmc
-        aci 0
+        mvi a, 0      ; mvi 0 not xra a to preserve carry flag
+        jc .cmp_cs
+        inr a
+  .cmp_cs
         sta .cpu.fCarry
         mov a, b
 ;    set_nz( result );
@@ -355,21 +350,20 @@ op_bcmp_:
 
 ;void op_bit( val ) uint8_t val;
 ; the val argument is in the a register
-        PUBLIC op_bit_
 op_bit_:
 ;{
 ;    cpu.fNegative = !! ( val & 0x80 );
         mov e, a
-        ani 128
+        ani 80h
         jz .26
-        mvi a, 1
+        inr a      ; high bit will be set, but that's OK
 .26:
         sta .cpu.fNegative
 ;    cpu.fOverflow = !! ( val & 0x40 );
         mov a, e
-        ani 64
+        ani 40h
         jz .28
-        mvi a, 1
+        inr a      ; high bit will be set, but that's ok
 .28:
         sta .cpu.fOverflow
 ;    cpu.fZero = ! ( cpu.a & val );
@@ -385,7 +379,6 @@ op_bit_:
         ret
 
 ;void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
-        PUBLIC op_bcd_m_
 op_bcd_m_:
 ;{
 ;    uint8_t alo, ahi, rlo, rhi, ad, rd, result;
@@ -557,7 +550,6 @@ op_bcd_m_:
 
 ;void op_math( op, rhs ) uint8_t op; uint8_t rhs;
 ; non-standard calling convention: op in c, rhs in b
-        PUBLIC op_math_
 op_math_:
 ;{
 ;    uint8_t result;
@@ -578,7 +570,7 @@ op_math_:
         jmp op_bcmp_ ; returns from op_bcmp
 ;    }
 ;    if ( cpu.fDecimal && ( 7 == math || 3 == math ) )
-.math_dec:
+  .math_dec:
 ;    {
         mov e, a  ; math operation is saved in e
         lda .cpu.fDecimal
@@ -606,23 +598,23 @@ op_math_:
         ret
 ;    }
 ;    if ( 7 == math )
-.math_7:
+  .math_7:
 ;    {
         cpi 7
         jnz .math_3
 ;        rhs = 255 - rhs;
-        mvi a, 255
+        mvi a, 0ffh
         sub b
         mov b, a
 ;        math = 3;
         jmp .m3_for_sure
 ;    }
 ;    if ( 3 == math )
-.math_3:
+  .math_3:
 ;    {
         cpi 3
         jnz .math_0
-.m3_for_sure:
+  .m3_for_sure:
 ;        res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
         lda .cpu.a
         mov l, a
@@ -640,7 +632,7 @@ op_math_:
         ora a
         jz .m3_sc
         mvi a, 1
-.m3_sc:
+  .m3_sc:
         sta .cpu.fCarry
 ;        cpu.fOverflow = ( ! ( ( cpu.a ^ rhs ) & 0x80 ) ) && ( ( cpu.a ^ result ) & 0x80 );
         mvi l, 0
@@ -662,7 +654,7 @@ op_math_:
         jmp aset_nz_
 ;    }
 ;    else if ( 0 == math )
-.math_0:
+  .math_0:
 ;        cpu.a |= rhs;
         cpi 0
         jnz .math_1
@@ -671,7 +663,7 @@ op_math_:
         sta .cpu.a
         jmp aset_nz_
 ;    else if ( 1 == math )
-.math_1:
+  .math_1:
 ;        cpu.a &= rhs;
         cpi 1
         jnz .math_2
@@ -680,7 +672,7 @@ op_math_:
         sta .cpu.a
         jmp aset_nz_
 ;    else if ( 2 == math )
-.math_2:
+  .math_2:
 ;        cpu.a ^= rhs;
         lda .cpu.a
         xra b
@@ -691,7 +683,6 @@ op_math_:
 
 ;void op_pop_pf()
 ;{
-        PUBLIC op_pop_p_
 op_pop_p_:
 ;    cpu.pf = pop();
         lda .cpu.sp
@@ -708,35 +699,35 @@ op_pop_p_:
         ani 80h
         jz .68
         mvi a, 1
-.68:
+  .68:
         sta .cpu.fNegative
 ;    cpu.fOverflow = !! ( cpu.pf & 0x40 );
         lda .cpu.pf
         ani 40h
         jz .70
         mvi a, 1
-.70:
+  .70:
         sta .cpu.fOverflow
 ;    cpu.fDecimal = !! ( cpu.pf & 8 );
         lda .cpu.pf
         ani 8
         jz .72
         mvi a, 1
-.72:
+  .72:
         sta .cpu.fDecimal
 ;    cpu.fInterruptDisable = !! ( cpu.pf & 4 );
         lda .cpu.pf
         ani 4
         jz .74
         mvi a, 1
-.74:
+  .74:
         sta .cpu.fInterruptDisable
 ;    cpu.fZero = !! ( cpu.pf & 2 );
         lda .cpu.pf
         ani 2
         jz .76
         mvi a, 1
-.76:
+  .76:
         sta .cpu.fZero
 ;    cpu.fCarry = ( cpu.pf & 1 ); 
         LDA .cpu.pf
@@ -747,7 +738,6 @@ op_pop_p_:
 
 ;void op_php()
 ;{
-        PUBLIC op_php_
 op_php_:
 ;    cpu.pf = 0x30;
         mvi b, 30h
@@ -759,7 +749,7 @@ op_php_:
         ori 80h
         mov b, a
 ;    if ( cpu.fOverflow ) cpu.pf |= 0x40;
-.78:
+  .78:
         lda .cpu.fOverflow
         ora a
         jz .79
@@ -767,7 +757,7 @@ op_php_:
         ori 40h
         mov b, a
 ;    if ( cpu.fDecimal ) cpu.pf |= 8;
-.79:
+  .79:
         lda .cpu.fDecimal
         ora a
         jz .80
@@ -775,7 +765,7 @@ op_php_:
         ori 8
         mov b, a
 ;    if ( cpu.fInterruptDisable ) cpu.pf |= 4;
-.80:
+  .80:
         lda .cpu.fInterruptDisable
         ora a
         jz .81
@@ -783,7 +773,7 @@ op_php_:
         ori 4
         mov b, a
 ;    if ( cpu.fZero ) cpu.pf |= 2;
-.81:
+  .81:
         lda .cpu.fZero
         ora a
         jz .82
@@ -791,7 +781,7 @@ op_php_:
         ori 2
         mov b, a
 ;    if ( cpu.fCarry ) cpu.pf |= 1;
-.82:
+  .82:
         lda .cpu.fCarry
         ora a
         jz .83
@@ -799,7 +789,7 @@ op_php_:
         ori 1
         mov b, a
 ;    push( cpu.pf );
-.83:
+  .83:
         mov a, b
         sta .cpu.pf
         lda .cpu.sp
@@ -814,7 +804,6 @@ op_php_:
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
-;            PUBLIC render_f_
 ;    render_f_:
 ;            push b
 ;            lxi h,0
@@ -977,7 +966,7 @@ emulate_:
         mov a, l
         sta .cpu.sp
         mvi h, 0
-        lxi d, m_0000_+256
+        lxi d, m_0000_ + 256
         dad d
         pop d
         mov m, e
@@ -1333,25 +1322,24 @@ emulate_:
 .173:
 ;            {
 ;                push_word( cpu.pc + 2 );
-        push d  ; save op1 and op2
         lhld .cpu.pc
         inx h
         inx h
-        push h
+        push h         ; save return address
         lda .cpu.sp
         dcr a
         mov l, a
         mvi h, 0
-        lxi d, m_0000_ + 100h
-        dad d
-        pop d
-        mov m, e
+        lxi b, m_0000_ + 100h
+        dad b
+        pop b
+        mov m, c
         inx h
-        mov m, d
+        mov m, b
         dcr a
         sta .cpu.sp
 ;                cpu.pc = get_word( cpu.pc + 1 );
-        pop h ; restore op1 and op2
+        xchg ; put op1 and op2 in hl
         shld .cpu.pc
 ;                continue;
         jmp .big_loop
@@ -1592,19 +1580,17 @@ emulate_:
         rrc
         jnc .204
         lda .cpu.a
-        mov b, a
         jmp .207
 .204:
         rrc
         jnc .206
         lda .cpu.x
-        mov b, a
         jmp .207
 .206:
         lda .cpu.y
-        mov b, a
 .207:
-        mov c, d
+        mov b, a        ; the byte to store
+        mov c, d        ; the instruction length
         push h
         call get_hmem_
         mov m, b
@@ -1811,17 +1797,17 @@ emulate_:
 ;                val = get_byte( address );
         call get_hmem_
         mov a, m
-        mov d, a
+        mov d, a      ; the value loaded
 ;                set_nz( val );
         call aset_nz_
 ;                if ( op & 1 )
 ;                    cpu.a = val;
-        mov a, c
+        mov a, c      ; opcode
+        mov c, b      ; instruction length
         rrc
         jnc .236
         mov a, d
         sta .cpu.a
-        mov c, b
         jmp .next_pc
 ;                else if ( op & 2 )
 .236:
@@ -1830,7 +1816,6 @@ emulate_:
 ;                    cpu.x = val;
         mov a, d
         sta .cpu.x
-        mov c, b
         jmp .next_pc
 .238:
 ;                else
@@ -1838,7 +1823,6 @@ emulate_:
         mov a, d
         sta .cpu.y
 ;                break;
-        mov c, b
         jmp .next_pc
 ;            }
 ; case 0xa8: { cpu.y = cpu.a; set_nz( cpu.y ); break; }                      /* tay */
@@ -1888,34 +1872,22 @@ emulate_:
 ; case 0xc6 : case 0xe6: { address = get_byte( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a8 */
 .246:
 .247:
-        lhld .cpu.pc
-        inx h
-        call get_hmem_
-        mov l, m
+        mov l, e
         mvi h, 0
         mvi b, 2
         jmp .crement_complete
 ; case 0xce : case 0xee: { address = get_word( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a16 */
 .249:
 .250:
-        lhld .cpu.pc
-        inx h
-        call get_hmem_
-        mov e, m
-        inx h
-        mov h, m
-        mov l, e
+        xchg
         mvi b, 3
         jmp .crement_complete
 ; case 0xd6 : case 0xf6: { address = (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ); goto _crement_complete; }
 ;      /* inc/dec a8, x */
 .251:
 .252:
-        lhld .cpu.pc
-        inx h
-        call get_hmem_
         lda .cpu.x
-        add m
+        add e
         mov l, a
         mvi h, 0
         mvi b, 2
@@ -1937,7 +1909,7 @@ emulate_:
         call get_hmem_
 ;                if ( op >= 0xe6 )
 ;                    (*pb)++;
-        mov a, c
+        mov a, c      ; the opcode
         cpi 0e6h
         jm .255
         inr m
@@ -1950,7 +1922,7 @@ emulate_:
         mov a, m
         call aset_nz_
 ;                break;
-        mov c, b
+        mov c, b      ; opcode length
         jmp .next_pc
 ;            }
 ; case 0xc8: { cpu.y++; set_nz( cpu.y ); break; } /* iny */
@@ -1986,20 +1958,14 @@ emulate_:
         jmp .next_pc
 ; case 0xe0: { op_cmp( cpu.x, get_byte( cpu.pc + 1 ) ); break; } /* cpx #d8 */
 .261:
-        lhld .cpu.pc
-        inx h
-        call get_hmem_
-        mov b, m
+        mov b, e
         lda .cpu.x
         call op_bcmp_
         mvi c, 2
         jmp .next_pc
 ; case 0xe4: { op_cmp( cpu.x, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpx a8 */
 .262:
-        lhld .cpu.pc
-        inx h
-        call get_hmem_
-        mov l, m
+        mov l, e
         mvi h, 0
         call get_hmem_
         mov b, m
@@ -2138,19 +2104,18 @@ fits_in__:
         DW .266, .135, .268, .268, .268, .141, .254, .267   ; f8
 
 .unk_op:
-        DB 'u', 'n', 'k', 'n', 'o', 'w', 'n', ' ', '6', '5', '0', '2'
+        DB 'b', 'a', 'd', ' ', '6', '5', '0', '2'
         DB ' ', 'o', 'p', 'c', 'o', 'd', 'e', ' ', '%', '0', '2', 'x', 10, 0
 
 .bad_addr_err:
-        DB 't', 'h', 'e', ' ', 'a', 'p', 'p', 'l', 'e', ' ', '1', ' '
-        DB 'a', 'p', 'p', ' ', 'u', 's', 'e', 'd'
-        DB 'a', 'n', ' ', 'i', 'n', 'v', 'a', 'l', 'i', 'd', ' '
+        DB 'a', 'p', 'p', 'l', 'e', ' ', '1', ' '
+        DB 'a', 'p', 'p', ' ', 'u', 's', 'e', 'd', ' ', 'a', ' ', 'b', 'a', 'd', ' '
         DB 'a', 'd', 'd', 'r', 'e', 's', 's', ' ', '%', '0', '4', 'x', 10, 0
 
 .notfit_str
-        DB 'b', 's', 's', ' ', 'a', 'r', 'e', 'a', ' ', '%', '0', '4', 'x', ' '
-        DB 'c', 'o', 'l', 'l', 'i', 'd', 'e', 's', ' ', 'w', 'i', 't', 'h', ' '
-        DB 's', 't', 'a', 'c', 'k', ' ', 'a', 'n', 'd', '/', 'o', 'r', ' '
+        DB 'b', 's', 's', ' ', '%', '0', '4', 'x', ' '
+        DB 'o', 'v', 'e', 'r', 'l', 'a', 'p', 's', ' '
+        DB 's', 't', 'a', 'c', 'k', ' ', '&', '/', '|', ' '
         DB 'B', 'D', 'O', 'S', ' ', '%', '0', '4', 'x', 10, 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
