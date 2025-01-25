@@ -24,11 +24,11 @@ void soft_reset() { g_State |= stateSoftReset; }
     The Altair Simulator doesn't have sufficient RAM for 32k. Turn APPLE1_32K off for that emulator.
 */
 
-static uint8_t m_0000[ 0x4000 ];
+uint8_t m_0000[ 0x4000 ];
 
 #define APPLE1_32K
 #ifdef APPLE1_32K
-static uint8_t m_4000[ 0x4000 ];
+uint8_t m_4000[ 0x4000 ];
 #endif
 
 uint8_t * mem_base[ 16 ] =
@@ -395,6 +395,37 @@ char * render_flags()
 }
 #endif
 
+/* this is only approximate as the linker can put the arrays anywhere in RAM */
+/* the 2k is for the stack (which really only needs a few bytes) and other bss after the array */
+bool fits_in_ram()
+{
+    uint16_t bdos_address, bottom_of_stack, address;
+
+    bdos_address = * (uint16_t *) 6;
+    /* printf( "bdos: %04x\n", bdos_address ); */
+    bottom_of_stack = bdos_address - 2048;
+    /* printf( "bottom_of_stack: %04x\n", bottom_of_stack ); */
+    address = (uint16_t) ( (uint8_t *) ( & m_0000 ) + sizeof( m_0000 ) - 1 );
+    /* printf( "m_0000: %04x\n", m_0000 ); */
+    /* printf( "end of m_0000: %04x\n", address ); */
+
+    if ( address < bottom_of_stack && address > (uint16_t) m_0000 ) /* too high or wrapped */
+    {
+#ifdef APPLE1_32K
+        address = (uint16_t) ( (uint8_t *) ( & m_4000 ) + sizeof( m_4000 ) - 1 ); /* too high or wrapped */
+        /* printf( "m4_0000: %04x\n", m_4000 ); */
+        /* printf( "end of m4_0000: %04x\n", address ); */
+        if ( address < bottom_of_stack && address > (uint16_t) m_4000 )
+            return true;
+#else
+        return true;
+#endif
+    }
+
+    printf( "uninitialized data area %04x collides with stack and/or BDOS %04x\n", address, bottom_of_stack );
+    return false;
+}
+
 void emulate()
 {
     uint8_t op, val;
@@ -628,4 +659,5 @@ _crement_complete:
 _all_done:
     return;
 }
+
 

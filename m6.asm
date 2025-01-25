@@ -58,11 +58,26 @@ soft_res_:
         sta g_State_
         ret
 
+; put all locals in bss and prior to m_0000 so m_0000 ends up highest in RAM
+    DSEG
+    bss .bcdalo, 1
+    bss .bcdahi, 1
+    bss .bcdrlo, 1
+    bss .bcdrhi, 1
+    bss .bcdad, 1
+    bss .bcdrd, 1
+    bss .bcdresult, 1
+    bss .om_result, 1
+    bss .ac_flags_, 7
+
 ; make m_0000 as large as fits on your CP/M machine. Then update mem_base.
-;static uint8_t m_0000[ 0x8000 ];
-        bss     m_0000_,32768
+; 4096 * 9 works in ntvcm (but not some other emulators)
+; 4096 * 5 works in the altair cp/m emulator
+; 
+ram_size equ 4096 * 8
+;static uint8_t m_0000[ ram_size ];
+    bss m_0000_, ram_size
 ;uint8_t * mem_base[ 16 ] =
-        DSEG
         public  mem_base_
 mem_base_:
 ;{
@@ -374,13 +389,6 @@ op_bit_:
 op_bcd_m_:
 ;{
 ;    uint8_t alo, ahi, rlo, rhi, ad, rd, result;
-        bss     .bcdalo, 1
-        bss     .bcdahi, 1
-        bss     .bcdrlo, 1
-        bss     .bcdrhi, 1
-        bss     .bcdad, 1
-        bss     .bcdrd, 1
-        bss     .bcdresult, 1
 ;    alo = cpu.a & 0xf;
 ;    ahi = cpu.a >> 4;
 ;    rlo = rhs & 0xf;
@@ -553,7 +561,6 @@ op_bcd_m_:
 op_math_:
 ;{
 ;    uint8_t result;
-        bss     .om_result,1
 ;    math = op >> 5;
         mov a, c
         rrc
@@ -807,7 +814,6 @@ op_php_:
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
-;            bss     ac_flags_,7
 ;            PUBLIC render_f_
 ;    render_f_:
 ;            push b
@@ -818,7 +824,7 @@ op_php_:
 ;            dad sp
 ;            sphl
 ;            push d
-;    ;    ac_flags[ 0 ] = cpu.fNegative ? 'N' : 'n';
+;    ;    .ac_flags[ 0 ] = cpu.fNegative ? 'N' : 'n';
 ;            lda .cpu.fNegative
 ;            ora a
 ;            JZ .r85
@@ -827,8 +833,8 @@ op_php_:
 ;    .r85:
 ;            mvi a, 110
 ;    .r86:
-;            STA ac_flags_
-;    ;    ac_flags[ 1 ] = cpu.fOverflow ? 'V' : 'v';
+;            STA .ac_flags_
+;    ;    .ac_flags[ 1 ] = cpu.fOverflow ? 'V' : 'v';
 ;            lda .cpu.fOverflow
 ;            ora a
 ;            JZ .r87
@@ -837,8 +843,8 @@ op_php_:
 ;    .r87:
 ;            mvi a, 118
 ;    .r88:
-;            STA ac_flags_+1
-;    ;    ac_flags[ 2 ] = cpu.fDecimal ? 'D' : 'd';
+;            STA .ac_flags_+1
+;    ;    .ac_flags[ 2 ] = cpu.fDecimal ? 'D' : 'd';
 ;            lda .cpu.fDecimal
 ;            ora a
 ;            JZ .r89
@@ -847,8 +853,8 @@ op_php_:
 ;    .r89:
 ;            mvi a, 100
 ;    .r90:
-;            STA ac_flags_+2
-;    ;    ac_flags[ 3 ] = cpu.fInterruptDisable ? 'I' : 'i';
+;            STA .ac_flags_+2
+;    ;    .ac_flags[ 3 ] = cpu.fInterruptDisable ? 'I' : 'i';
 ;            lda .cpu.fInterruptDisable
 ;            ora a
 ;            JZ .r91
@@ -857,8 +863,8 @@ op_php_:
 ;    .r91:
 ;            mvi a, 105
 ;    .r92:
-;            STA ac_flags_+3
-;    ;    ac_flags[ 4 ] = cpu.fZero ? 'Z' : 'z';
+;            STA .ac_flags_+3
+;    ;    .ac_flags[ 4 ] = cpu.fZero ? 'Z' : 'z';
 ;            lda .cpu.fZero
 ;            ora a
 ;            JZ .r93
@@ -867,8 +873,8 @@ op_php_:
 ;    .r93:
 ;            mvi a, 122
 ;    .r94:
-;            STA ac_flags_+4
-;    ;    ac_flags[ 5 ] = cpu.fCarry ? 'C' : 'c';
+;            STA .ac_flags_+4
+;    ;    .ac_flags[ 5 ] = cpu.fCarry ? 'C' : 'c';
 ;            lda .cpu.fCarry
 ;            ora a
 ;            JZ .r95
@@ -877,12 +883,12 @@ op_php_:
 ;    .r95:
 ;            mvi a, 99
 ;    .r96:
-;            STA ac_flags_+5
-;    ;    ac_flags[ 6 ] = 0;
+;            STA .ac_flags_+5
+;    ;    .ac_flags[ 6 ] = 0;
 ;            xra a
-;            STA ac_flags_+6
-;    ;    return ac_flags;
-;            LXI H, ac_flags_
+;            STA .ac_flags_+6
+;    ;    return .ac_flags;
+;            LXI H, .ac_flags_
 ;            jmp cret
 ;    ;}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
@@ -2056,6 +2062,46 @@ emulate_:
         ret
 ;}
 
+;bool fits_in_ram()
+;{
+        PUBLIC fits_in__
+fits_in__:
+;    bdos_address = * (uint16_t *) 6;
+        lhld 6
+;    bottom_of_stack = bdos_address - 2048;
+        lxi d, -2048
+        dad d
+        xchg
+;    address = (uint16_t) ( (uint8_t *) ( & m_0000 ) + sizeof( m_0000 ) - 1 );
+        lxi h, m_0000_ + ram_size - 1
+;    if ( address < bottom_of_stack )
+;        return true
+        call .ug
+        jz .no_fit
+        lxi d, m_0000_ + ram_size - 1
+        lxi h, m_0000_
+        call .ug
+        jz .no_fit     ; it wrapped around, which is bad
+        ret
+;    printf( "bss area %04x collides with stack and/or BDOS %04x\n", address, bottom_of_stack );
+.no_fit:
+        lhld 6
+        lxi d, -2048
+        dad d
+        push h
+        lxi h, m_0000_ + ram_size - 1
+        push h
+        lxi h, .notfit_str
+        push h
+        call printf_
+        pop d
+        pop d
+        pop d
+;    return false;
+        xra a
+        ret
+;}
+
         DSEG
 .jump_table:
         DW  .93,  .94, .268, .268, .268, .100, .142, .268   ; 00
@@ -2101,6 +2147,12 @@ emulate_:
         DB 'a', 'n', ' ', 'i', 'n', 'v', 'a', 'l', 'i', 'd', ' '
         DB 'a', 'd', 'd', 'r', 'e', 's', 's', ' ', '%', '0', '4', 'x', 10, 0
 
+.notfit_str
+        DB 'b', 's', 's', ' ', 'a', 'r', 'e', 'a', ' ', '%', '0', '4', 'x', ' '
+        DB 'c', 'o', 'l', 'l', 'i', 'd', 'e', 's', ' ', 'w', 'i', 't', 'h', ' '
+        DB 's', 't', 'a', 'c', 'k', ' ', 'a', 'n', 'd', '/', 'o', 'r', ' '
+        DB 'B', 'D', 'O', 'S', ' ', '%', '0', '4', 'x', 10, 0
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
 ;.trc_str:
 ;        DB 'p', 'c', ' ', '%', '0', '4', 'x', ',', ' ', 'o', 'p', ' '
@@ -2123,5 +2175,6 @@ emulate_:
         extrn   .ml
         extrn   .ud
         extrn   .um
+        extrn   .ug
         END
 

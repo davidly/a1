@@ -731,6 +731,12 @@ int main( argc, argv ) int argc; char * argv[];
     char * pcHEX, *parg, c, lower;
     pcHEX = 0;
 
+    if ( !fits_in_ram() )
+    {
+        printf( "a1 is too large to fit in RAM; adjust APPLE1_32K in m6502.c or m_0000 in m6.asm\n" );
+        exit( 1 );
+    }
+
     for ( i = 1; i < argc; i++ )
     {
         parg = argv[i];

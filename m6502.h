@@ -25,6 +25,7 @@ extern uint8_t m_ff00[ 256 ];   /* woz monitor */
 #define OP_HALT 0xff
 #define OP_RTS 0x60
 
+extern bool fits_in_ram();
 extern void emulate();
 extern void end_emulation();
 extern void soft_reset();
