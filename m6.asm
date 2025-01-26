@@ -1612,9 +1612,10 @@ emulate_:
 ;            }
 ; case 0x88: { cpu.y--; set_nz( cpu.y ); break; }       /* dey */
 .209:
-        lda .cpu.y
+        lxi d, .cpu.y
+        ldax d
         dcr a
-        sta .cpu.y
+        stax d
         call aset_nz_
         mvi c, 1
         jmp .next_pc
@@ -1927,17 +1928,19 @@ emulate_:
 ;            }
 ; case 0xc8: { cpu.y++; set_nz( cpu.y ); break; } /* iny */
 .257:
-        lda .cpu.y
+        lxi d, .cpu.y
+        ldax d
         inr a
-        sta .cpu.y
+        stax d
         call aset_nz_
         mvi c, 1
         jmp .next_pc
 ; case 0xca: { cpu.x--; set_nz( cpu.x ); break; } /* dex */
 .258:
-        lda .cpu.x
+        lxi d, .cpu.x
+        ldax d
         dcr a
-        sta .cpu.x
+        stax d
         call aset_nz_
         mvi c, 1
         jmp .next_pc
@@ -1975,9 +1978,10 @@ emulate_:
         jmp .next_pc
 ; case 0xe8: { cpu.x++; set_nz( cpu.x ); break; } /* inx */
 .263:
-        lda .cpu.x
+        lxi d, .cpu.x
+        ldax d
         inr a
-        sta .cpu.x
+        stax d
         call aset_nz_
         mvi c, 1
         jmp .next_pc
