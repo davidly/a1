@@ -226,12 +226,7 @@ op_brotate:
 ;
 ;    rotate = op >> 5;
         mov a, c
-        rrc
-        rrc
-        rrc
-        rrc
-        rrc
-        ani 7
+        ani 0e0h ; save the top 3 bits
 ;    if ( 0 == rotate ) /* asl */        
 ;    {
         cpi 0
@@ -252,7 +247,7 @@ op_brotate:
 ;    else if ( 1 == rotate ) /* rol */   
 .rot_rol
 ;    {
-        cpi 1
+        cpi 20h  ; 1 in the top 3 bits
         jnz .rot_lsr
 ;        oldCarry = cpu.fCarry;
         lda .cpu.fCarry
@@ -284,7 +279,7 @@ op_brotate:
 ;    else if ( 2 == rotate ) /* lsr */   
 .rot_lsr
 ;    {
-        cpi 2
+        cpi 40h
         jnz .rot_ror
 ;        cpu.fCarry = ( val & 1 );
         mov a, b
@@ -338,13 +333,13 @@ op_bcmp_:
 ;    result = (uint8_t) ( (uint16_t) lhs - (uint16_t) rhs );
 ;    cpu.fCarry = ( lhs >= rhs );
         sub b         ; carry cleared on borow
-        mov b, a
+        mov b, a      ; save the result
         mvi a, 0      ; mvi 0 not xra a to preserve carry flag
         jc .cmp_cs
         inr a
   .cmp_cs
         sta .cpu.fCarry
-        mov a, b
+        mov a, b      ; restore subtraction result
 ;    set_nz( result );
         jmp aset_nz_
 
@@ -455,7 +450,7 @@ op_bcd_m_:
         lxi h, 2
         dad sp
         mov a, m
-        cpi 7
+        cpi 0e0h ; 7
         jne .41
 ;        if ( !cpu.fCarry )
 ;            rd += 1;
@@ -555,15 +550,10 @@ op_math_:
 ;    uint8_t result;
 ;    math = op >> 5;
         mov a, c
-        rrc
-        rrc
-        rrc
-        rrc
-        rrc
-        ani 7
+        ani 0e0h       ; the math operation is in the top 3 bits
 ;    if ( 6 == math )
 ;    {
-        cpi 6
+        cpi 0c0h       ; 6 in the top 3 bits
         jnz .math_dec
         lda .cpu.a
 ;        return;
@@ -577,9 +567,9 @@ op_math_:
         ora a
         mov a, e
         jz .math_7
-        cpi 7
+        cpi 0e0h
         jz .math_bcd
-        cpi 3
+        cpi 60h
         jnz .math_7
 .math_bcd:
 ;        op_bcd_math( math, rhs );
@@ -600,7 +590,7 @@ op_math_:
 ;    if ( 7 == math )
   .math_7:
 ;    {
-        cpi 7
+        cpi 0e0h
         jnz .math_3
 ;        rhs = 255 - rhs;
         mvi a, 0ffh
@@ -612,7 +602,7 @@ op_math_:
 ;    if ( 3 == math )
   .math_3:
 ;    {
-        cpi 3
+        cpi 060h
         jnz .math_0
   .m3_for_sure:
 ;        res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
@@ -665,7 +655,7 @@ op_math_:
 ;    else if ( 1 == math )
   .math_1:
 ;        cpu.a &= rhs;
-        cpi 1
+        cpi 20h
         jnz .math_2
         lda .cpu.a
         ana b
@@ -1577,7 +1567,7 @@ emulate_:
 .st_complete:
 ;                set_byte( address, ( op & 1 ) ? cpu.a : ( op & 2 ) ? cpu.x : cpu.y );
         mov a, c
-        rrc
+        rrc             ; low bit goes to fCarry
         jnc .204
         lda .cpu.a
         jmp .207
@@ -1805,7 +1795,7 @@ emulate_:
 ;                    cpu.a = val;
         mov a, c      ; opcode
         mov c, b      ; instruction length
-        rrc
+        rrc	      ; low bit goes to fCarry
         jnc .236
         mov a, d
         sta .cpu.a
