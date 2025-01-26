@@ -218,15 +218,14 @@ static uint8_t ins_len_6502[ 256 ] =    /* length of instructions */
 uint8_t op_rotate( op, val ) uint8_t op; uint8_t val;
 {
     bool oldCarry;
-    uint8_t rotate;
 
-    rotate = op >> 5;
-    if ( 0 == rotate ) /* asl */        
+    op &= 0xe0;
+    if ( 0 == op ) /* asl */        
     {
         cpu.fCarry = !! ( 0x80 & val );
         val <<= 1;
     }
-    else if ( 1 == rotate ) /* rol */   
+    else if ( 0x20 == op ) /* rol */   
     {
         oldCarry = cpu.fCarry;
         cpu.fCarry = !! ( 0x80 & val );
@@ -234,7 +233,7 @@ uint8_t op_rotate( op, val ) uint8_t op; uint8_t val;
         if ( oldCarry )
             val |= 1;
     }
-    else if ( 2 == rotate ) /* lsr */   
+    else if ( 0x40 == op ) /* lsr */   
     {
         cpu.fCarry = ( val & 1 );
         val >>= 1;
@@ -284,7 +283,7 @@ void op_bcd_math( math, rhs ) uint8_t math; uint8_t rhs;
     ad = ahi * 10 + alo;
     rd = rhi * 10 + rlo;
 
-    if ( 7 == math )
+    if ( 0xe0 == math )
     {
         if ( !cpu.fCarry )
             rd += 1;
@@ -319,27 +318,27 @@ void op_math( op, rhs ) uint8_t op; uint8_t rhs;
 {
     uint16_t res16; 
     uint8_t result;
-    uint8_t math;
-    math = op >> 5;
-    if ( 6 == math )
+
+    op &= 0xe0; 
+    if ( 0xc0 == op )
     {
         op_cmp( cpu.a, rhs );
         return;
     }
 
-    if ( cpu.fDecimal && ( 7 == math || 3 == math ) )
+    if ( cpu.fDecimal && ( 0xe0 == op || 0x60 == op ) )
     {
-        op_bcd_math( math, rhs );
+        op_bcd_math( op, rhs );
         return;
     }
 
-    if ( 7 == math )
+    if ( 0xe0 == op )
     {
         rhs = 255 - rhs;
-        math = 3;
+        op = 0x60;
     }
 
-    if ( 3 == math )
+    if ( 0x60 == op )
     {
         res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
         result = (uint8_t) res16; /* cast generates faster code for Aztec than & 0xff */
@@ -347,11 +346,11 @@ void op_math( op, rhs ) uint8_t op; uint8_t rhs;
         cpu.fOverflow = ( ! ( ( cpu.a ^ rhs ) & 0x80 ) ) && ( ( cpu.a ^ result ) & 0x80 );
         cpu.a = result;
     }
-    else if ( 0 == math )
+    else if ( 0 == op )
         cpu.a |= rhs;
-    else if ( 1 == math )
+    else if ( 0x20 == op )
         cpu.a &= rhs;
-    else if ( 2 == math )
+    else
         cpu.a ^= rhs;
 
     set_nz( cpu.a );
