@@ -19,7 +19,7 @@
 ;   Written by David Lee
 ;*/
 ;struct MOS_6502 cpu;
-        global  cpu_,13
+    global  cpu_,13
 
 .cpu.a equ cpu_ + 0
 .cpu.x equ cpu_ + 1
@@ -43,7 +43,7 @@ g_State_:
 ;#define stateSoftReset 4
 ;
 ;void end_emulation() { g_State |= stateEndEmulation; }
-        PUBLIC end_emul_
+    PUBLIC end_emul_
 end_emul_:
         lda g_State_
         ori 2
@@ -126,35 +126,16 @@ bad_addr_:
 ;            bad_address( address );
 ;        return base + address;
 ;    }
-; this version has address on the stack and is called from a1.c
+; this version has address on the stack and is called from a1.c to load programs
         PUBLIC get_mem_
 get_mem_:
-        lxi h, 3
-        dad sp
-        mov a, m           ; use the top nibble
-        rrc
-        rrc
-        rrc
-        ani 1eh            ; just shift 3 times and mask
-        mov l, a
-        mvi h, 0
-        lxi d, mem_base_
-        dad d              ; hl now points to the array entry
-        mov e, m
-        inx h
-        mov d, m           ; DE now has the array entry (base)
-        mov a, d
-        ora e              ; if DE is 0, it's a bad address
-        jz bad_address_    ; jmp not call
         lxi h, 2
         dad sp
         mov a, m
         inx h
         mov h, m
         mov l, a           ; hl now has address
-        dad d              ; hl now has base + address
-        ret
-
+        ; n.b.: fall through to get_hmem
 ; this version has address in HL and is called from this file
 get_hmem_:
         push h
@@ -192,18 +173,17 @@ aset_nz_:
         sta .cpu.fZero      ; set zero flag to true
         ret
   _anz_set:
-        ani 80h
-        jz _anz_pos
-        inr a               ; high bit will be set too, but that's OK
+        mvi a, 0
+        sta .cpu.fZero      ; set zero flag to false
+        jp _anz_pos
+        inr a
   _anz_pos:
         sta .cpu.fNegative  ; set negative flag
-        xra a
-        sta .cpu.fZero      ; set zero flag to false
         ret
 
 ;void power_on()
 ;{
-        PUBLIC power_on_
+    PUBLIC power_on_
 power_on_:
 ;    cpu.pc = get_word( 0xfffc );
         lxi h, 0fffch
@@ -332,16 +312,27 @@ op_bcmp_:
 ;    uint8_t result;
 ;    result = (uint8_t) ( (uint16_t) lhs - (uint16_t) rhs );
 ;    cpu.fCarry = ( lhs >= rhs );
-        sub b         ; carry cleared on borow
-        mov b, a      ; save the result
-        mvi a, 0      ; mvi 0 not xra a to preserve carry flag
-        jc .cmp_cs
-        inr a
-  .cmp_cs
+        cmp b               ; carry cleared on borow
+        mvi a, 0            ; mvi 0 not xra a to preserve carry flag
+        jc .bcmp_c
+        mvi a, 1            ; can't use inr a because that'd modify flags
+  .bcmp_c:
         sta .cpu.fCarry
-        mov a, b      ; restore subtraction result
-;    set_nz( result );
-        jmp aset_nz_
+fset_nz_:                  ; set 6502 NZ flags based on 8080 NZ flags. part of op_bcmp and a function entrypoint
+        jnz .bcmp_nz
+        mvi a, 0
+        sta .cpu.fNegative  ; set negative flag to false
+        inr a             
+        sta .cpu.fZero      ; set zero flag to true
+        ret
+  .bcmp_nz:
+        mvi a, 0
+        sta .cpu.fZero      ; set zero flag to false
+        jp .bcmp_pos
+        inr a
+  .bcmp_pos:
+        sta .cpu.fNegative  ; set negative flag
+        ret
 
 ;void op_bit( val ) uint8_t val;
 ; the val argument is in the a register
@@ -651,7 +642,7 @@ op_math_:
         lda .cpu.a
         ora b
         sta .cpu.a
-        jmp aset_nz_
+        jmp fset_nz_
 ;    else if ( 1 == math )
   .math_1:
 ;        cpu.a &= rhs;
@@ -660,7 +651,7 @@ op_math_:
         lda .cpu.a
         ana b
         sta .cpu.a
-        jmp aset_nz_
+        jmp fset_nz_
 ;    else if ( 2 == math )
   .math_2:
 ;        cpu.a ^= rhs;
@@ -668,7 +659,7 @@ op_math_:
         xra b
         sta .cpu.a
 ;    set_nz( cpu.a );
-        jmp aset_nz_
+        jmp fset_nz_
 ;}
 
 ;void op_pop_pf()
@@ -874,7 +865,7 @@ op_php_:
 
 ;void emulate()
 ;{
-        PUBLIC emulate_
+    PUBLIC emulate_
 emulate_:
 ; enable instruction tracing in ntvcm. 
 ;     mvi c, 0b9h
@@ -932,7 +923,7 @@ emulate_:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
 
 ;        switch( op )
-        mvi b, 0        ; opcode is in register c
+        mvi b, 0        ; opcode is in register c. b is initially 0 for the code below
         lxi h, .jump_table
         dad b
         dad b
@@ -1606,7 +1597,7 @@ emulate_:
         ldax d
         dcr a
         stax d
-        call aset_nz_
+        call fset_nz_
         mvi c, 1
         jmp .next_pc
 ; case 0x8a: { cpu.a = cpu.x; set_nz( cpu.a ); break; } /* txa */
@@ -1795,7 +1786,7 @@ emulate_:
 ;                    cpu.a = val;
         mov a, c      ; opcode
         mov c, b      ; instruction length
-        rrc	      ; low bit goes to fCarry
+        rrc           ; low bit goes to fCarry
         jnc .236
         mov a, d
         sta .cpu.a
@@ -1911,7 +1902,7 @@ emulate_:
 .256:
 ;                set_nz( *pb );
         mov a, m
-        call aset_nz_
+        call fset_nz_
 ;                break;
         mov c, b      ; opcode length
         jmp .next_pc
@@ -1922,7 +1913,7 @@ emulate_:
         ldax d
         inr a
         stax d
-        call aset_nz_
+        call fset_nz_
         mvi c, 1
         jmp .next_pc
 ; case 0xca: { cpu.x--; set_nz( cpu.x ); break; } /* dex */
@@ -1931,7 +1922,7 @@ emulate_:
         ldax d
         dcr a
         stax d
-        call aset_nz_
+        call fset_nz_
         mvi c, 1
         jmp .next_pc
 ; case 0xcc: { op_cmp( cpu.y, get_byte( get_word( cpu.pc + 1 ) ) ); break; } /* cpy a16 */
@@ -1972,7 +1963,7 @@ emulate_:
         ldax d
         inr a
         stax d
-        call aset_nz_
+        call fset_nz_
         mvi c, 1
         jmp .next_pc
 ; case 0xea: { break; } /* nop */
@@ -2024,7 +2015,7 @@ emulate_:
 
 ;bool fits_in_ram()
 ;{
-        PUBLIC fits_in__
+    PUBLIC fits_in__
 fits_in__:
 ;    bdos_address = * (uint16_t *) 6;
         lhld 6
