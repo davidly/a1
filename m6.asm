@@ -37,7 +37,7 @@
 ;static uint8_t g_State = 0;
     DSEG
 g_State_:
-        DB 0
+    DB 0
     CSEG
 ;#define stateEndEmulation 2
 ;#define stateSoftReset 4
@@ -70,34 +70,16 @@ soft_res_:
     bss .om_result, 1
     bss .ac_flags_, 7
 
-; make m_0000 as large as fits on your CP/M machine. Then update mem_base.
+; make m_0000 as large as fits on your CP/M machine. 
 ; 4096 * 9 works in ntvcm (but not some other emulators)
 ; 4096 * 5 works in the altair cp/m emulator
-; 
+; 4091 * 1 is a base 4k Apple 1, which works well!
+
 ram_size equ 4096 * 8
+ram_page_beyond equ ram_size / 256
 ;static uint8_t m_0000[ ram_size ];
     bss m_0000_, ram_size
-;uint8_t * mem_base[ 16 ] =
-mem_base_:
-;{
-        DW m_0000_          ; 0000
-        DW m_0000_          ; 1000
-        DW m_0000_          ; 2000
-        DW m_0000_          ; 3000
-        DW m_0000_          ; 4000
-        DW m_0000_          ; 5000
-        DW m_0000_          ; 6000
-        DW m_0000_          ; 7000
-        DW 0                ; 8000
-        DW 0                ; 9000
-        DW 0                ; a000
-        DW 0                ; b000
-        DW 0                ; c000
-        DW m_d000_ - 0d000h ; d000
-        DW m_e000_ - 0e000h ; e000
-        DW m_ff00_ - 0ff00h ; f000  ; f000-ff00 not handled
-        CSEG
-;
+
 ;void bad_address( address ) uint16_t address;
 bad_addr_:
 ;{
@@ -110,12 +92,7 @@ bad_addr_:
         push d
         lxi h, .bad_addr_err
         push h
-        call printf_
-; no need to restore the stack; the app is exiting
-;        pop d
-;        pop d
-;    exit( 1 );
-        jmp exit_  ; cp/m apps don't have exit codes. exit doesn't return
+        call m_hard_e_  ; no coming back from this
 
 ; in C:
 ;    uint8_t * get_mem( address ) uint16_t address;
@@ -138,25 +115,38 @@ get_mem_:
         ; n.b.: fall through to get_hmem
 ; this version has address in HL and is called from this file
 get_hmem_:
-        push h
-        mov a, h           ; use the top nibble
-        rrc
-        rrc
-        rrc
-        ani 1eh            ; just shift 3 times and mask
-        mov l, a
-        mvi h, 0
-        lxi d, mem_base_
-        dad d              ; hl now points to the array entry
-        mov e, m
-        inx h
-        mov d, m           ; DE now has the array entry (base)
-;        mov a, d           ; these 3 instructions take 5% of app runtime. worth it?
-;        ora e              ; if DE is 0, it's a bad address
-;        cz bad_address_    ; call not jmp; address is on the stack
-        pop h
-        dad d              ; hl now has base + address
+        mov a, h
+        cpi ram_page_beyond
+        jp .gmt_basic      ; is it in m_0000_ RAM?
+        lxi d, m_0000_
+        dad d
         ret
+  .gmt_basic:
+        cpi 0e0h
+        jm .gmt_io
+        cpi 0f0h
+        jp .gmt_monitor    ; is it in woz basic?
+        lxi d, m_e000_ - 0e000h
+        dad d
+        ret
+  .gmt_monitor:
+        cpi 0ffh
+        jnz .gmt_bad       ; is it in the woz monitor?
+        lxi d, m_ff00_ - 0ff00h
+        dad d
+        ret
+  .gmt_io:
+        cpi 0d0h
+        jnz .gmt_bad       ; is it memory mapped io? (kbd/console)
+        mov a, l
+        cpi 14h		   ; d010 through d013 are hardware
+        jp .gmt_bad
+        lxi d, m_d000_ - 0d000h
+        dad d
+        ret
+  .gmt_bad:
+        push h
+        call bad_address_
 
 ; in C:
 ;    void set_nz( x ) uint8_t x;
@@ -318,6 +308,7 @@ op_bcmp_:
         mvi a, 1            ; can't use inr a because that'd modify flags
   .bcmp_c:
         sta .cpu.fCarry
+        ; n.b.: fall through to fset_nz_
 fset_nz_:                  ; set 6502 NZ flags based on 8080 NZ flags. part of op_bcmp and a function entrypoint
         jnz .bcmp_nz
         mvi a, 0
@@ -711,7 +702,7 @@ op_pop_p_:
   .76:
         sta .cpu.fZero
 ;    cpu.fCarry = ( cpu.pf & 1 ); 
-        LDA .cpu.pf
+        lda .cpu.pf
         ani 1
         sta .cpu.fCarry
 ;}
@@ -946,7 +937,7 @@ emulate_:
         dcx h
         mov a, l
         sta .cpu.sp
-        mvi h, 0
+        mov h, b                ; b is 0
         lxi d, m_0000_ + 256
         dad d
         pop d
@@ -985,7 +976,7 @@ emulate_:
         add e ; op1 is already in e
 ;                op_math( op, get_byte( get_word( val ) ) );
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov e, m
         inx h
@@ -1009,7 +1000,7 @@ emulate_:
 ;                op_math( op, get_byte( get_byte( cpu.pc + 1 ) )
 ; );
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov b, m
         call op_math_
@@ -1061,14 +1052,14 @@ emulate_:
 ; val = get_byte( cpu.pc + 1 ); /* reduce expression complexity for hisoft c by using local */
         mov l, e
 ;                op_math( op, get_byte( cpu.y + get_word( val ) ) );
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov e, m
         inx h
         mov d, m
         lda .cpu.y
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         call get_hmem_
         mov b, m
@@ -1089,7 +1080,7 @@ emulate_:
         lda .cpu.x
         add e
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov b, m
         call op_math_
@@ -1108,7 +1099,7 @@ emulate_:
 ;                op_math( op, get_byte( get_word( cpu.pc + 1 ) + cpu.y ) );
         lda .cpu.y
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         call get_hmem_
         mov b, m
@@ -1129,7 +1120,7 @@ emulate_:
 ;                op_math( op, get_byte( cpu.x + get_word( cpu.pc + 1 ) ) );
         lda .cpu.x
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         call get_hmem_
         mov b, m
@@ -1145,7 +1136,7 @@ emulate_:
 .144:
 .145:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         jmp .rot_complete
 ; case 0x0e: case 0x2e: case 0x4e: case 0x6e: { address = get_word( cpu.pc + 1 ); goto _rot_complete; }
 ;      /* asl/rol/lsr/ror a16 */
@@ -1161,10 +1152,10 @@ emulate_:
 .152:
 .153:
 .154:
-        mvi d, 0
+        mov d, b                ; b is 0
         lda .cpu.x
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         jmp .rot_complete
 ; case 0x1e: case 0x3e: case 0x5e: case 0x7e:        /* asl/rol/lsr/ror a16, x */
@@ -1176,7 +1167,7 @@ emulate_:
 ;                address = cpu.x + get_word( cpu.pc + 1 );
         lda .cpu.x
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
 ;_rot_complete:
 .rot_complete:
@@ -1281,7 +1272,7 @@ emulate_:
         mvi a, 80h
         xra e
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         inx h
         inx h
         lxi d, 0ff80h
@@ -1310,7 +1301,7 @@ emulate_:
         lda .cpu.sp
         dcr a
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         lxi b, m_0000_ + 100h
         dad b
         pop b
@@ -1328,7 +1319,7 @@ emulate_:
 ; case 0x24: { op_bit( get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* bit a8 NVZ */
 .174:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov a, m
         call op_bit_
@@ -1363,7 +1354,7 @@ emulate_:
         lda .cpu.sp
         inr a
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         lxi d, m_0000_+256
         dad d
         mov e, m
@@ -1384,7 +1375,7 @@ emulate_:
         mov l, a
         dcr a
         sta .cpu.sp
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         lda .cpu.a
         mov m, a
@@ -1413,7 +1404,7 @@ emulate_:
         mov l, a
         inr a
         sta .cpu.sp
-        mvi h, 0
+        mov h, b                ; b is 0
         lxi d, m_0000_+256
         dad d
         mov e, m
@@ -1431,7 +1422,7 @@ emulate_:
         inr a
         sta .cpu.sp
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         lxi d, m_0000_+256
         dad d
         mov a, m
@@ -1474,7 +1465,7 @@ emulate_:
         lda .cpu.x
         mov e, a
         dad d
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov e, m
         inx h
@@ -1488,7 +1479,7 @@ emulate_:
 .193:
 .194:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi d, 2
         jmp .st_complete
 ; case 0x8c: case 0x8d: case 0x8e: { address = get_word( cpu.pc + 1 ); goto _st_complete; }
@@ -1503,14 +1494,14 @@ emulate_:
 ;      /* sta (a8), y */
 .198:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov e, m
         inx h
         mov d, m
         lda .cpu.y
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         mvi d, 2
         jmp .st_complete
@@ -1522,7 +1513,7 @@ emulate_:
         lda .cpu.x
         add l
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi d, 2
         jmp .st_complete
 ; case 0x96: { address = (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.y ); goto _st_complete; }
@@ -1532,7 +1523,7 @@ emulate_:
         lda .cpu.y
         add l
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi d, 2
         jmp .st_complete
 ; case 0x99: { address = get_word( cpu.pc + 1 ) + cpu.y; goto _st_complete; }
@@ -1540,7 +1531,7 @@ emulate_:
 .202:
         lda .cpu.y
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         mvi d, 3
         jmp .st_complete
@@ -1551,7 +1542,7 @@ emulate_:
 ;                address = get_word( cpu.pc + 1 ) + cpu.x;
         lda .cpu.x
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         mvi d, 3
 ;_st_complete:
@@ -1636,7 +1627,7 @@ emulate_:
         lda .cpu.x
         mov e, a
         dad d
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov e, m
         inx h
@@ -1650,7 +1641,7 @@ emulate_:
 .219:
 .220:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi b, 2
         jmp .ld0_complete
 ; case 0xac: case 0xad: case 0xae:{ address = get_word( cpu.pc + 1 ); goto _ld_complete; }
@@ -1665,14 +1656,14 @@ emulate_:
 ;      /* lda (a8), y */
 .225:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov e, m
         inx h
         mov d, m
         lda .cpu.y
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         mvi b, 2
         jmp .ld_complete
@@ -1683,7 +1674,7 @@ emulate_:
         lda .cpu.x
         add e
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi b, 2
         jmp .ld0_complete
 ; case 0xb6: { address = (uint8_t) ( get_byte( cpu.pc + 1 ) + cpu.y ); goto _ld0_complete; }
@@ -1692,7 +1683,7 @@ emulate_:
         lda .cpu.y
         mov l, a
         dad d
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi b, 2
         jmp .ld0_complete
 ; case 0xb9 : case 0xbe: { address = get_word( cpu.pc + 1 ) + cpu.y; goto _ld_complete; }
@@ -1701,7 +1692,7 @@ emulate_:
 .230:
         lda .cpu.y
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         mvi b, 3
         jmp .ld_complete
@@ -1712,7 +1703,7 @@ emulate_:
 ;                address = get_word( cpu.pc + 1 ) + cpu.x;
         lda .cpu.x
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         mvi b, 3
 ;       
@@ -1844,7 +1835,7 @@ emulate_:
 ; case 0xc4: { op_cmp( cpu.y, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpy a8 */
 .245:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov b, m
         lda .cpu.y
@@ -1855,7 +1846,7 @@ emulate_:
 .246:
 .247:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi b, 2
         jmp .crement_complete
 ; case 0xce : case 0xee: { address = get_word( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a16 */
@@ -1871,7 +1862,7 @@ emulate_:
         lda .cpu.x
         add e
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         mvi b, 2
         jmp .crement_complete
 ;
@@ -1882,7 +1873,7 @@ emulate_:
 ;                address = cpu.x + get_word( cpu.pc + 1 );
         lda .cpu.x
         mov l, a
-        mvi h, 0
+        mov h, b                ; b is 0
         dad d
         mvi b, 3
 ;_crement_complete:
@@ -1950,7 +1941,7 @@ emulate_:
 ; case 0xe4: { op_cmp( cpu.x, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpx a8 */
 .262:
         mov l, e
-        mvi h, 0
+        mov h, b                ; b is 0
         call get_hmem_
         mov b, m
         lda .cpu.x
@@ -1990,17 +1981,15 @@ emulate_:
 .267:
         call m_halt_
         jmp .all_done
-;            default: m_hard_exit( "unknown mos6502 opcode %02x\n", op );
+; default: m_hard_exit( "unknown mos6502 opcode %02x\n", op );
 .268:
-        mvi b, 0
         push b
         lxi h, .unk_op
         push h
         call m_hard_e_  ; no coming back from this
 ;        }
-        jmp .next_pc
 .next_pc:
-        mvi b, 0        ; instruction length is in c
+        mvi b, 0        ; instruction length is in c. b started as 0 but may have changed
         lhld .cpu.pc
         dad b
         shld .cpu.pc
