@@ -139,7 +139,7 @@ get_hmem_:
         cpi 0d0h
         jnz .gmt_bad       ; is it memory mapped io? (kbd/console)
         mov a, l
-        cpi 14h		   ; d010 through d013 are hardware
+        cpi 14h            ; d010 through d013 are hardware
         jp .gmt_bad
         lxi d, m_d000_ - 0d000h
         dad d
@@ -712,66 +712,67 @@ op_pop_p_:
 ;{
 op_php_:
 ;    cpu.pf = 0x30;
-        mvi b, 30h
+        mvi e, 30h
 ;    if ( cpu.fNegative ) cpu.pf |= 0x80;
         lda .cpu.fNegative
         ora a
         jz .78
-        mov a, b
+        mov a, e
         ori 80h
-        mov b, a
+        mov e, a
 ;    if ( cpu.fOverflow ) cpu.pf |= 0x40;
   .78:
         lda .cpu.fOverflow
         ora a
         jz .79
-        mov a, b
+        mov a, e
         ori 40h
-        mov b, a
+        mov e, a
 ;    if ( cpu.fDecimal ) cpu.pf |= 8;
   .79:
         lda .cpu.fDecimal
         ora a
         jz .80
-        mov a, b
+        mov a, e
         ori 8
-        mov b, a
+        mov e, a
 ;    if ( cpu.fInterruptDisable ) cpu.pf |= 4;
   .80:
         lda .cpu.fInterruptDisable
         ora a
         jz .81
-        mov a, b
+        mov a, e
         ori 4
-        mov b, a
+        mov e, a
 ;    if ( cpu.fZero ) cpu.pf |= 2;
   .81:
         lda .cpu.fZero
         ora a
         jz .82
-        mov a, b
+        mov a, e
         ori 2
-        mov b, a
+        mov e, a
 ;    if ( cpu.fCarry ) cpu.pf |= 1;
   .82:
         lda .cpu.fCarry
         ora a
         jz .83
-        mov a, b
+        mov a, e
         ori 1
-        mov b, a
+        mov e, a
 ;    push( cpu.pf );
   .83:
-        mov a, b
+        mov a, e
         sta .cpu.pf
         lda .cpu.sp
         mov l, a
         dcr a
         sta .cpu.sp
+        mov a, e
         mvi h, 0
         lxi d, m_0000_+256
         dad d
-        mov m, b
+        mov m, a
 ;}
         ret
 
@@ -987,6 +988,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x05: case 0x25: case 0x45: case 0x65: case 0xc5: case 0xe5: /* ora/and/eor/adc/cmp/sbc a8 */
@@ -1006,6 +1008,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x09: case 0x29: case 0x49: case 0x69: case 0xc9: case 0xe9: /* ora/and/eor/adc/cmp/sbc #d8 */
@@ -1021,6 +1024,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x0d: case 0x2d: case 0x4d: case 0x6d: case 0xcd: case 0xed: /* ora/and/eor/adc/cmp/sbc a16 */
@@ -1039,6 +1043,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 3
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x11: case 0x31: case 0x51: case 0x71: case 0xd1: case 0xf1: /* ora/and/eor/adc/cmp/sbc (a8), y */
@@ -1066,6 +1071,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5: /* ora/and/eor/adc/cmp/sbc a8, x */  
@@ -1086,6 +1092,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x19: case 0x39: case 0x59: case 0x79: case 0xd9: case 0xf9: /* ora/and/eor/adc/cmp/sbc a16, y */
@@ -1106,6 +1113,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 3
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x1d: case 0x3d: case 0x5d: case 0x7d: case 0xdd: case 0xfd:
@@ -1127,6 +1135,7 @@ emulate_:
         call op_math_
 ;                break;
         mvi c, 3
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x06: case 0x26: case 0x46: case 0x66: { address = get_byte( cpu.pc + 1 ); goto _rot_complete; }
@@ -1185,6 +1194,7 @@ emulate_:
         jne .rot_done
         inr c
   .rot_done
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0x08: { op_php(); break; } /* php */
@@ -1441,6 +1451,7 @@ emulate_:
         call op_brotate
         sta .cpu.a
         mvi c, 1
+        mvi b, 0
         jmp .next_pc
 ; case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); continue; } /* jmp (a16) */
 .188:
@@ -1568,6 +1579,7 @@ emulate_:
         mov m, b
 ;                if ( 0xd012 == address ) /* apple 1 memory-mapped I/O */
 ;                    m_store( address );
+        mvi b, 0
         pop h
         mov a, h
         cpi 0d0h
@@ -1579,7 +1591,6 @@ emulate_:
         call m_store_
         pop d
 ;                break;
-.208:
         jmp .next_pc
 ;            }
 ; case 0x88: { cpu.y--; set_nz( cpu.y ); break; }       /* dey */
@@ -1777,6 +1788,7 @@ emulate_:
 ;                    cpu.a = val;
         mov a, c      ; opcode
         mov c, b      ; instruction length
+        mvi b, 0
         rrc           ; low bit goes to fCarry
         jnc .236
         mov a, d
@@ -1831,6 +1843,7 @@ emulate_:
         lda .cpu.y
         call op_bcmp_
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ; case 0xc4: { op_cmp( cpu.y, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpy a8 */
 .245:
@@ -1841,6 +1854,7 @@ emulate_:
         lda .cpu.y
         call op_bcmp_
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ; case 0xc6 : case 0xe6: { address = get_byte( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a8 */
 .246:
@@ -1896,6 +1910,7 @@ emulate_:
         call fset_nz_
 ;                break;
         mov c, b      ; opcode length
+        mvi b, 0
         jmp .next_pc
 ;            }
 ; case 0xc8: { cpu.y++; set_nz( cpu.y ); break; } /* iny */
@@ -1924,6 +1939,7 @@ emulate_:
         lda .cpu.y
         call op_bcmp_
         mvi c, 3
+        mvi b, 0
         jmp .next_pc
 ; case 0xd8: { cpu.fDecimal = false; break; } /* cld */
 .260:
@@ -1937,6 +1953,7 @@ emulate_:
         lda .cpu.x
         call op_bcmp_
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ; case 0xe4: { op_cmp( cpu.x, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpx a8 */
 .262:
@@ -1947,6 +1964,7 @@ emulate_:
         lda .cpu.x
         call op_bcmp_
         mvi c, 2
+        mvi b, 0
         jmp .next_pc
 ; case 0xe8: { cpu.x++; set_nz( cpu.x ); break; } /* inx */
 .263:
@@ -1970,6 +1988,7 @@ emulate_:
         lda .cpu.x
         call op_bcmp_
         mvi c, 3
+        mvi b, 0
         jmp .next_pc
 ; case 0xf8: { cpu.fDecimal = true; break; } /* sed */
 .266:
@@ -1989,9 +2008,8 @@ emulate_:
         call m_hard_e_  ; no coming back from this
 ;        }
 .next_pc:
-        mvi b, 0        ; instruction length is in c. b started as 0 but may have changed
         lhld .cpu.pc
-        dad b
+        dad b            ; b is 0 and c is the opcode byte count
         shld .cpu.pc
 ;    }
         jmp .big_loop
