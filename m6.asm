@@ -163,7 +163,7 @@ aset_nz_:
         sta .cpu.fZero      ; set zero flag to true
         ret
   _anz_set:
-        mvi a, 0
+        mvi a, 0            ; can't xra because that'd set flags
         sta .cpu.fZero      ; set zero flag to false
         jp _anz_pos
         inr a
@@ -202,10 +202,10 @@ op_brotate:
         cpi 0
         jnz .rot_rol
 ;        cpu.fCarry = !! ( 0x80 & val );
-        mov a, b
-        ani 80h
+        mvi a, 80h
+        ana b
         jz .r0_a
-        inr a         ; high bit will be set too, but that's OK
+        mvi a, 1
   .r0_a
         sta .cpu.fCarry
 ;        val <<= 1;
@@ -215,7 +215,7 @@ op_brotate:
         jmp .rot_end
 ;    }
 ;    else if ( 1 == rotate ) /* rol */   
-.rot_rol
+  .rot_rol
 ;    {
         cpi 20h  ; 1 in the top 3 bits
         jnz .rot_lsr
@@ -223,11 +223,11 @@ op_brotate:
         lda .cpu.fCarry
         mov e, a
 ;        cpu.fCarry = !! ( 0x80 & val );
-        mov a, b
-        ani 80h
-        mvi a, 0
+        mvi a, 80h
+        ana b
+        mvi a, 0      ; can't use xra; just preserve flags
         jz .r1_a
-        inr a         ; high bit will be set too, but that's OK
+        mvi a, 1
   .r1_a
         sta .cpu.fCarry
 ;        val <<= 1;
@@ -247,13 +247,13 @@ op_brotate:
         jmp .rot_end
 ;    }
 ;    else if ( 2 == rotate ) /* lsr */   
-.rot_lsr
+  .rot_lsr
 ;    {
         cpi 40h
         jnz .rot_ror
 ;        cpu.fCarry = ( val & 1 );
-        mov a, b
-        ani 1
+        mvi a, 1
+        ana b
         sta .cpu.fCarry
 ;        val >>= 1;
         mov a, b
@@ -262,14 +262,14 @@ op_brotate:
         jmp .rot_end
 ;    }
 ;    else /* ror */
-.rot_ror:
+  .rot_ror:
 ;    {
 ;        oldCarry = cpu.fCarry;
         lda .cpu.fCarry
         mov e, a
 ;        cpu.fCarry = ( val & 1 );
-        mov a, b
-        ani 1
+        mvi a, 1                  ; 7 + 4 cycles instead of mov a, b, ani 1 5 + 7
+        ana b
         sta .cpu.fCarry
 ;        val >>= 1;
         mov a, b
@@ -311,13 +311,13 @@ op_bcmp_:
         ; n.b.: fall through to fset_nz_
 fset_nz_:                  ; set 6502 NZ flags based on 8080 NZ flags. part of op_bcmp and a function entrypoint
         jnz .bcmp_nz
-        mvi a, 0
+        xra a
         sta .cpu.fNegative  ; set negative flag to false
         inr a             
         sta .cpu.fZero      ; set zero flag to true
         ret
   .bcmp_nz:
-        mvi a, 0
+        mvi a, 0            ; mvi not xra to preserve flags
         sta .cpu.fZero      ; set zero flag to false
         jp .bcmp_pos
         inr a
@@ -1307,21 +1307,21 @@ emulate_:
         lhld .cpu.pc
         inx h
         inx h
-        push h         ; save return address
+        push h                  ; save the return address
         lda .cpu.sp
-        dcr a
+        dcr a                   ; push decrements sp before writing
         mov l, a
         mov h, b                ; b is 0
         lxi b, m_0000_ + 100h
-        dad b
+        dad b                   ; hl now points to the current stack location
         pop b
-        mov m, c
+        mov m, c                ; put the return address on the stack
         inx h
         mov m, b
         dcr a
         sta .cpu.sp
 ;                cpu.pc = get_word( cpu.pc + 1 );
-        xchg ; put op1 and op2 in hl
+        xchg                    ; put op1 and op2 jump target address in hl
         shld .cpu.pc
 ;                continue;
         jmp .big_loop
@@ -1352,7 +1352,7 @@ emulate_:
 .177:
         mvi a, 1
         sta .cpu.fCarry
-        mvi c, 1
+        mov c, a
         jmp .next_pc
 ; case 0x40:                                                /* rti */
 .178:
@@ -1467,7 +1467,7 @@ emulate_:
 .189:
         mvi a, 1
         sta .cpu.fInterruptDisable
-        mvi c, 1
+        mov c, a
         jmp .next_pc
 ; case 0x81: { address = get_word( (uint8_t) ( cpu.x + get_byte( cpu.pc + 1 ) ) ); goto _st_complete; }
 ;      /* stx (a8, x) */
@@ -1994,7 +1994,7 @@ emulate_:
 .266:
         mvi a, 1
         sta .cpu.fDecimal
-        mvi c, 1
+        mov c, a
         jmp .next_pc
 ; case 0xff: { m_halt(); goto _all_done; } /* halt */
 .267:
