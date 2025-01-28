@@ -2,6 +2,7 @@
 ; Then it had many hand-edit optimizations (mostly deletes).
 ; It can't be recreated with a compiler without losing edits.
 ; Uncomment debugging lines to get instruction tracing printed to stdout.
+; Optimized for 8080 over Z80 when there is a choice.
 ;
 ; struct MOS_6502
 ; {
@@ -10,9 +11,6 @@
 ;     uint8_t pf;   /* NV-BDIZC. State is tracked in bools below and only updated for pf and php */
 ;     bool fNegative, fOverflow, fDecimal, fInterruptDisable, fZero, fCarry;
 ; };
-
-    extrn   .begin,.chl,.swt
-    extrn   csave,cret,.move
 
 ;/*
 ;   6502 emulator targeted at an 8080 running CP/M 2.2.
@@ -115,7 +113,7 @@ get_mem_:
         ; n.b.: fall through to get_hmem
 ; this version has address in HL and is called from this file
 get_hmem_:
-        mov a, h
+        mov a, h           ; doesn't modify b, c 
         cpi ram_page_beyond
         jp .gmt_basic      ; is it in m_0000_ RAM?
         lxi d, m_0000_
@@ -155,7 +153,7 @@ get_hmem_:
 ;        cpu.fZero = !x;
 ;    }
 ; except that x is passed in the a register, not on the stack
-aset_nz_:
+aset_nz_:                   ; doesn't modify b, c, d, e, h, l
         cpi 0
         jnz _anz_set
         sta .cpu.fNegative  ; set negative flag to false
@@ -191,7 +189,7 @@ power_on_:
 
 ;uint8_t op_brotate( op, val ) uint8_t op; uint8_t val;
 ; op is in c and val is in b. return value is in a
-op_brotate:
+op_brotate:              ; doesn't modify c, h, l
 ;{
 ;
 ;    rotate = op >> 5;
@@ -297,7 +295,7 @@ op_brotate:
 
 ;void op_bcmp( lhs, rhs ) uint8_t lhs; uint8_t rhs;
 ; lhs is in a, rhs is in b (not on the stack)
-op_bcmp_:
+op_bcmp_:                ; doesn't modify b, c, d, e, h, l
 ;{
 ;    uint8_t result;
 ;    result = (uint8_t) ( (uint16_t) lhs - (uint16_t) rhs );
@@ -326,8 +324,8 @@ fset_nz_:                  ; set 6502 NZ flags based on 8080 NZ flags. part of o
         ret
 
 ;void op_bit( val ) uint8_t val;
-; the val argument is in the a register
-op_bit_:
+; the val argument is in the a register. 
+op_bit_:                 ; doesn't modify b, c, d, h, l
 ;{
 ;    cpu.fNegative = !! ( val & 0x80 );
         mov e, a
@@ -655,7 +653,7 @@ op_math_:
 
 ;void op_pop_pf()
 ;{
-op_pop_p_:
+op_pop_p_:               ; doesn't modify b, c 
 ;    cpu.pf = pop();
         lda .cpu.sp
         inr a
@@ -710,7 +708,7 @@ op_pop_p_:
 
 ;void op_php()
 ;{
-op_php_:
+op_php_:                 ; doesn't modify b, c
 ;    cpu.pf = 0x30;
         mvi e, 30h
 ;    if ( cpu.fNegative ) cpu.pf |= 0x80;
@@ -959,7 +957,7 @@ emulate_:
         mov e, m
         inx h
         mov d, m
-        xchg
+        xchg          ; mov r, r is 4 cycles on Z80 and 5 on 8080. xchg is 5 cycles on Z80 and 4 on 8080. 
         shld .cpu.pc
 ;                continue;
         jmp .big_loop
@@ -981,8 +979,8 @@ emulate_:
         call get_hmem_
         mov e, m
         inx h
-        mov h, m
-        mov l, e
+        mov d, m
+        xchg
         call get_hmem_
         mov b, m
         call op_math_
@@ -1419,8 +1417,8 @@ emulate_:
         dad d
         mov e, m
         inx h
-        mov h, m
-        mov l, e
+        mov d, m
+        xchg
         inx h
         shld .cpu.pc
 ;                continue;
@@ -1459,8 +1457,8 @@ emulate_:
         call get_hmem_
         mov e, m
         inx h
-        mov h, m
-        mov l, e
+        mov d, m
+        xchg
         shld .cpu.pc
         jmp .big_loop
 ; case 0x78: { cpu.fInterruptDisable = true; break; } /* sei */
@@ -1480,8 +1478,8 @@ emulate_:
         call get_hmem_
         mov e, m
         inx h
-        mov h, m
-        mov l, e
+        mov d, m
+        xchg
         mvi d, 2
         jmp .st_complete
 ; case 0x84: case 0x85: case 0x86: { address = get_byte( cpu.pc + 1 ); goto _st_complete; }
@@ -1642,8 +1640,8 @@ emulate_:
         call get_hmem_
         mov e, m
         inx h
-        mov h, m
-        mov l, e
+        mov d, m
+        xchg
         mvi b, 2
         jmp .ld_complete
 ; case 0xa4 : case 0xa5: case  0xa6: { address = get_byte( cpu.pc + 1 ); goto _ld0_complete; }
@@ -1768,8 +1766,8 @@ emulate_:
         call get_hmem_
         mov e, m
         inx h
-        mov h, m
-        mov l, e
+        mov d, m
+        xchg
         shld .cpu.pc
 ;                        continue;
         jmp .big_loop
@@ -2118,14 +2116,12 @@ fits_in__:
 ;        DB 's', 'p', ' ', '%', '0', '2', 'x', ',', ' ', '%', 's', 10, 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; end debugging
 
-        extrn   exit_
         extrn   printf_
         extrn   m_hard_e_
         extrn   m_store_
         extrn   m_load_
         extrn   m_hook_
         extrn   m_halt_
-        extrn   get_mem_
         extrn   m_ff00_
         extrn   m_e000_
         extrn   m_d000_
