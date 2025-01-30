@@ -112,8 +112,8 @@ get_mem_:
         mov l, a           ; hl now has address
         ; n.b.: fall through to get_hmem
 ; this version has address in HL and is called from this file
-get_hmem_:
-        mov a, h           ; doesn't modify b, c 
+get_hmem_:                 ; doesn't modify b, c 
+        mov a, h           
         cpi ram_page_beyond
         jp .gmt_basic      ; is it in m_0000_ RAM?
         lxi d, m_0000_
@@ -135,7 +135,7 @@ get_hmem_:
         ret
   .gmt_io:
         cpi 0d0h
-        jnz .gmt_bad       ; is it memory mapped io? (kbd/console)
+        jnz .gmt_bad       ; is it memory mapped io? (kbd/video)
         mov a, l
         cpi 14h            ; d010 through d013 are hardware
         jp .gmt_bad
@@ -197,7 +197,6 @@ op_brotate:              ; doesn't modify c, h, l
         ani 0e0h ; save the top 3 bits
 ;    if ( 0 == rotate ) /* asl */        
 ;    {
-        cpi 0
         jnz .rot_rol
 ;        cpu.fCarry = !! ( 0x80 & val );
         mvi a, 80h
@@ -286,8 +285,8 @@ op_brotate:              ; doesn't modify c, h, l
 ;    }
   .rot_end:
 ;    set_nz( val );
-        mov b, a
-        call aset_nz_
+        mov b, a	      ; save the result
+        call fset_nz_	      ; set nz based on current flags
 ;    return val;
         mov a, b
         ret
@@ -590,7 +589,7 @@ op_math_:
         mov l, a
         mvi h, 0
         mov e, b
-        mvi d, 0
+        mov d, h
         dad d
         lda .cpu.fCarry
         mov e, a
@@ -1572,7 +1571,7 @@ emulate_:
 .207:
         mov b, a        ; the byte to store
         mov c, d        ; the instruction length
-        push h
+        push h          ; save for the upcoming mapped i/o check
         call get_hmem_
         mov m, b
 ;                if ( 0xd012 == address ) /* apple 1 memory-mapped I/O */
@@ -1719,7 +1718,7 @@ emulate_:
 ;_ld_complete:   /* load */
 .ld_complete:
 ;                if ( address >= 0xd010 && address <= 0xd012 )
-; note: really ony d010 and d011 are required for load
+; note: really only d010 and d011 are required for load
 ;                        /* apple 1 memory-mapped I/O */
 ;                {
         mov a, h
