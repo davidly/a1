@@ -285,8 +285,8 @@ op_brotate:              ; doesn't modify c, h, l
 ;    }
   .rot_end:
 ;    set_nz( val );
-        mov b, a	      ; save the result
-        call fset_nz_	      ; set nz based on current flags
+        mov b, a              ; save the result
+        call fset_nz_         ; set nz based on current flags
 ;    return val;
         mov a, b
         ret
@@ -929,20 +929,17 @@ emulate_:
         lhld .cpu.pc
         inx h
         inx h
-        push h
+        push h                  ; save the return address
         lda .cpu.sp
         mov l, a
-        dcx h
-        mov a, l
-        sta .cpu.sp
         mov h, b                ; b is 0
         lxi d, m_0000_ + 256
         dad d
-        pop d
-        mov m, e
-        inx h
-        mov m, d
-        lda .cpu.sp
+        pop d                   ; get the return address back in a register
+        mov m, d                ; push the return address high byte
+        dcx h
+        mov m, e                ; push the return address low byte
+        dcr a
         dcr a
         sta .cpu.sp
 ;                op_php(); 
