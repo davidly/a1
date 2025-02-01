@@ -299,7 +299,7 @@ op_bcmp_:                ; doesn't modify b, c, d, e, h, l
 ;    uint8_t result;
 ;    result = (uint8_t) ( (uint16_t) lhs - (uint16_t) rhs );
 ;    cpu.fCarry = ( lhs >= rhs );
-        cmp b               ; carry cleared on borow
+        cmp b               ; carry cleared on borrow
         mvi a, 0            ; mvi 0 not xra a to preserve carry flag
         jc .bcmp_c
         mvi a, 1            ; can't use inr a because that'd modify flags
@@ -586,39 +586,35 @@ op_math_:
   .m3_for_sure:
 ;        res16 = (uint16_t) cpu.a + (uint16_t) rhs + (uint16_t) cpu.fCarry;
         lda .cpu.a
+        mov c, a     ; save cpu.a for later
         mov l, a
         mvi h, 0
         mov e, b
-        mov d, h
+        mov d, h     ; h is conveniently 0
         dad d
         lda .cpu.fCarry
         mov e, a
         dad d
 ;        result = (uint8_t) res16; /* cast generates faster code for Aztec than & 0xff */
-        mov d, l ; save 8-bit result in d
+        mov d, l     ; save 8-bit result in d
 ;        cpu.fCarry = ( 0 != ( res16 & 0xff00 ) );
-        mov a, h
-        ora a
-        jz .m3_sc
-        mvi a, 1
-  .m3_sc:
+        mov a, h     ; a will be 0 or 1 (if there was a carry)
         sta .cpu.fCarry
 ;        cpu.fOverflow = ( ! ( ( cpu.a ^ rhs ) & 0x80 ) ) && ( ( cpu.a ^ result ) & 0x80 );
-        mvi l, 0
-        lda .cpu.a   ; cpu.a
-        mov e, a
+        mvi l, 0     ; assume overflow will be false
+        mov a, c     ; cpu.a
         xra b        ; rhs
         ani 80h
         jnz .59
-        mov a, e     ; cpu.a
+        mov a, c     ; cpu.a
         xra d        ; result
         ani 80h
         jz .59
-        mvi l, 1
+        mvi l, 1     ; overflow is true
 .59:
         mov a, l
         sta .cpu.fOverflow
-        mov a, d
+        mov a, d     ; save the 8-bit result
         sta .cpu.a
         jmp aset_nz_
 ;    }
@@ -627,25 +623,28 @@ op_math_:
 ;        cpu.a |= rhs;
         cpi 0
         jnz .math_1
-        lda .cpu.a
+        lxi d, .cpu.a
+        ldax d
         ora b
-        sta .cpu.a
+        stax d
         jmp fset_nz_
 ;    else if ( 1 == math )
   .math_1:
 ;        cpu.a &= rhs;
         cpi 20h
         jnz .math_2
-        lda .cpu.a
+        lxi d, .cpu.a
+        ldax d
         ana b
-        sta .cpu.a
+        stax d
         jmp fset_nz_
 ;    else if ( 2 == math )
   .math_2:
 ;        cpu.a ^= rhs;
-        lda .cpu.a
+        lxi d, .cpu.a
+        ldax d
         xra b
-        sta .cpu.a
+        stax d
 ;    set_nz( cpu.a );
         jmp fset_nz_
 ;}
@@ -663,44 +662,45 @@ op_pop_p_:               ; doesn't modify b, c
         dad d
         mov a, m
         sta .cpu.pf
+        mov d, a
 ;    cpu.fNegative = !! ( cpu.pf & 0x80 );
-        lda .cpu.pf
-        ani 80h
+        mvi a, 80h
+        ana d
         jz .68
         mvi a, 1
   .68:
         sta .cpu.fNegative
 ;    cpu.fOverflow = !! ( cpu.pf & 0x40 );
-        lda .cpu.pf
-        ani 40h
+        mvi a, 40h
+        ana d
         jz .70
         mvi a, 1
   .70:
         sta .cpu.fOverflow
 ;    cpu.fDecimal = !! ( cpu.pf & 8 );
-        lda .cpu.pf
-        ani 8
+        mvi a, 8
+        ana d
         jz .72
         mvi a, 1
   .72:
         sta .cpu.fDecimal
 ;    cpu.fInterruptDisable = !! ( cpu.pf & 4 );
-        lda .cpu.pf
-        ani 4
+        mvi a, 4
+        ana d
         jz .74
         mvi a, 1
   .74:
         sta .cpu.fInterruptDisable
 ;    cpu.fZero = !! ( cpu.pf & 2 );
-        lda .cpu.pf
-        ani 2
+        mvi a, 2
+        ana d
         jz .76
         mvi a, 1
   .76:
         sta .cpu.fZero
 ;    cpu.fCarry = ( cpu.pf & 1 ); 
-        lda .cpu.pf
-        ani 1
+        mvi a, 1
+        ana d
         sta .cpu.fCarry
 ;}
         ret
@@ -929,19 +929,17 @@ emulate_:
         lhld .cpu.pc
         inx h
         inx h
-        push h                  ; save the return address
+        xchg                    ; return address now in de
         lda .cpu.sp
-        mov l, a
-        mov h, b                ; b is 0
-        lxi d, m_0000_ + 256
-        dad d
-        pop d                   ; get the return address back in a register
-        mov m, d                ; push the return address high byte
+        mov c, a
+        dcr a
+        dcr a
+        sta .cpu.sp             ; stack pointer updated
+        lxi h, m_0000_ + 256
+        dad b
+        mov m, d                ; write the return address high byte
         dcx h
-        mov m, e                ; push the return address low byte
-        dcr a
-        dcr a
-        sta .cpu.sp
+        mov m, e                ; write the return address low byte
 ;                op_php(); 
         call op_php_
 ;                cpu.fInterruptDisable = true;
@@ -966,7 +964,7 @@ emulate_:
 .98:
 .99:
 ;            {
-;                val = get_byte( cpu.pc + 1 ) + cpu.x; /* reduce
+;                val = get_byte( cpu.pc + 1 ) + cpu.x;
         lda .cpu.x
         add e ; op1 is already in e
 ;                op_math( op, get_byte( get_word( val ) ) );

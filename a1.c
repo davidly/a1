@@ -469,13 +469,10 @@ uint8_t m_load( address ) uint16_t address;
         {
             kbd_available = false;
             ch = kbd_char;
-            ch = (char) toupper( ch );
-            ch |= 0x80;
-            set_byte( 0xd011, 0 );
-            return ch;
         }
+        else
+            ch = (char) bdos_kbhit();
 
-        ch = (char) bdos_kbhit();
         if ( 0 != ch )
         {
             ch = (char) toupper( ch );
@@ -544,10 +541,10 @@ static uint8_t read_byte( p ) char * p;
     uint8_t result;
     char save;
     save = p[ 2 ];
-    p[2] = 0;
+    p[ 2 ] = 0;
 
     result = (uint8_t) hextoui( p );
-    p[2] = save;
+    p[ 2 ] = save;
     return result;
 }
 
@@ -556,10 +553,10 @@ static uint16_t read_word( p ) char * p;
     uint16_t result;
     char save;
     save = p[ 4 ];
-    p[4] = 0;
+    p[ 4 ] = 0;
 
     result = hextoui( p );
-    p[4] = save;
+    p[ 4 ] = save;
     return result;
 }
 
