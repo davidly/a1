@@ -60,7 +60,7 @@ uint8_t * mem_base[ 16 ] =
 
 void bad_address( address ) uint16_t address;
 {
-    printf( "the apple 1 app referenced the invalid address %04x\n", address );
+    printf( "apple 1 app used a bad address %04x\n", address );
     exit( 1 );
 }
 

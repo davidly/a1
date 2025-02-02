@@ -1179,11 +1179,10 @@ emulate_:
         call op_brotate   ; does not modify hl
         mov m, a
 ;                break;
-        mov a, c   ; if the low nibble in op is e, it's 3 bytes long else 2
-        ani 0fh
-        cpi 0eh
+        mvi a, 8
+        ana c                    ; if the low nibble in op is e not 6 then it's 3 bytes long else 2
         mvi c, 2
-        jne .rot_done
+        jz .rot_done 
         inr c
   .rot_done
         mvi b, 0
