@@ -68,10 +68,10 @@ soft_res_:
     bss .om_result, 1
     bss .ac_flags_, 7
 
-; make m_0000 as large as fits on your CP/M machine. 
+; make m_0000 as large as fits on your CP/M machine.
 ; 4096 * 9 works in ntvcm (but not some other emulators)
 ; 4096 * 5 works in the altair cp/m emulator
-; 4091 * 1 is a base 4k Apple 1, which works well!
+; 4096 * 1 is a base 4k Apple 1, which works well!
 
 ram_size equ 4096 * 8
 ram_page_beyond equ ram_size / 256
@@ -112,8 +112,8 @@ get_mem_:
         mov l, a           ; hl now has address
         ; n.b.: fall through to get_hmem
 ; this version has address in HL and is called from this file
-get_hmem_:                 ; doesn't modify b, c 
-        mov a, h           
+get_hmem_:                 ; doesn't modify b, c
+        mov a, h
         cpi ram_page_beyond
         jp .gmt_basic      ; is it in m_0000_ RAM?
         lxi d, m_0000_
@@ -157,7 +157,7 @@ aset_nz_:                   ; doesn't modify b, c, d, e, h, l
         cpi 0
         jnz _anz_set
         sta .cpu.fNegative  ; set negative flag to false
-        inr a             
+        inr a
         sta .cpu.fZero      ; set zero flag to true
         ret
   _anz_set:
@@ -195,7 +195,7 @@ op_brotate:              ; doesn't modify c, h, l
 ;    rotate = op >> 5;
         mov a, c
         ani 0e0h ; save the top 3 bits
-;    if ( 0 == rotate ) /* asl */        
+;    if ( 0 == rotate ) /* asl */
 ;    {
         jnz .rot_rol
 ;        cpu.fCarry = !! ( 0x80 & val );
@@ -211,7 +211,7 @@ op_brotate:              ; doesn't modify c, h, l
         ani 0feh
         jmp .rot_end
 ;    }
-;    else if ( 1 == rotate ) /* rol */   
+;    else if ( 1 == rotate ) /* rol */
   .rot_rol
 ;    {
         cpi 20h  ; 1 in the top 3 bits
@@ -243,7 +243,7 @@ op_brotate:              ; doesn't modify c, h, l
         ori 1
         jmp .rot_end
 ;    }
-;    else if ( 2 == rotate ) /* lsr */   
+;    else if ( 2 == rotate ) /* lsr */
   .rot_lsr
 ;    {
         cpi 40h
@@ -310,7 +310,7 @@ fset_nz_:                  ; set 6502 NZ flags based on 8080 NZ flags. part of o
         jnz .bcmp_nz
         xra a
         sta .cpu.fNegative  ; set negative flag to false
-        inr a             
+        inr a
         sta .cpu.fZero      ; set zero flag to true
         ret
   .bcmp_nz:
@@ -323,7 +323,7 @@ fset_nz_:                  ; set 6502 NZ flags based on 8080 NZ flags. part of o
         ret
 
 ;void op_bit( val ) uint8_t val;
-; the val argument is in the a register. 
+; the val argument is in the a register.
 op_bit_:                 ; doesn't modify b, c, d, h, l
 ;{
 ;    cpu.fNegative = !! ( val & 0x80 );
@@ -651,7 +651,7 @@ op_math_:
 
 ;void op_pop_pf()
 ;{
-op_pop_p_:               ; doesn't modify b, c 
+op_pop_p_:               ; doesn't modify b, c
 ;    cpu.pf = pop();
         lda .cpu.sp
         inr a
@@ -698,7 +698,7 @@ op_pop_p_:               ; doesn't modify b, c
         mvi a, 1
   .76:
         sta .cpu.fZero
-;    cpu.fCarry = ( cpu.pf & 1 ); 
+;    cpu.fCarry = ( cpu.pf & 1 );
         mvi a, 1
         ana d
         sta .cpu.fCarry
@@ -856,7 +856,7 @@ op_php_:                 ; doesn't modify b, c
 ;{
     PUBLIC emulate_
 emulate_:
-; enable instruction tracing in ntvcm. 
+; enable instruction tracing in ntvcm.
 ;     mvi c, 0b9h
 ;     mvi d, 1
 ;     call 5
@@ -879,7 +879,7 @@ emulate_:
         mov d, m
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; debugging
-;            push b ; preserve register c 
+;            push b ; preserve register c
 ;            push d ; preserve registers d and e
 ;            CALL render_f_
 ;            PUSH H
@@ -922,7 +922,7 @@ emulate_:
         mov l, a
         pchl
 ;        {
-; case 0x00:  /* brk */                                       
+; case 0x00:  /* brk */
 .93:
 ;            {
 ;                push_word( cpu.pc + 2 );
@@ -940,7 +940,7 @@ emulate_:
         mov m, d                ; write the return address high byte
         dcx h
         mov m, e                ; write the return address low byte
-;                op_php(); 
+;                op_php();
         call op_php_
 ;                cpu.fInterruptDisable = true;
         mvi a, 1
@@ -951,7 +951,7 @@ emulate_:
         mov e, m
         inx h
         mov d, m
-        xchg          ; mov r, r is 4 cycles on Z80 and 5 on 8080. xchg is 5 cycles on Z80 and 4 on 8080. 
+        xchg          ; mov r, r is 4 cycles on Z80 and 5 on 8080. xchg is 5 cycles on Z80 and 4 on 8080.
         shld .cpu.pc
 ;                continue;
         jmp .big_loop
@@ -1066,7 +1066,7 @@ emulate_:
         mvi b, 0
         jmp .next_pc
 ;            }
-; case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5: /* ora/and/eor/adc/cmp/sbc a8, x */  
+; case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5: /* ora/and/eor/adc/cmp/sbc a8, x */
 .124:
 .125:
 .126:
@@ -1182,7 +1182,7 @@ emulate_:
         mvi a, 8
         ana c                    ; if the low nibble in op is e not 6 then it's 3 bytes long else 2
         mvi c, 2
-        jz .rot_done 
+        jz .rot_done
         inr c
   .rot_done
         mvi b, 0
@@ -1205,7 +1205,7 @@ emulate_:
         jnz .161
 ;                goto _op_rts;
         jmp .162
-;            }                             
+;            }
 ; case 0x10: { if ( !cpu.fNegative ) goto _branch_complete; break; } /* bpl */
 .163:
         lda .cpu.fNegative
@@ -1259,13 +1259,13 @@ emulate_:
 .171:
 ;            {
 ;                if ( !cpu.fZero )
-;                    break;                                     
+;                    break;
         lda .cpu.fZero
         ora a
         jnz .br_complete
         mvi c, 2
         jmp .next_pc
-;          
+;
 ;_branch_complete:
 .br_complete:
 ; /* casting to a larger signed type doesn't sign-extend on Aztec C, so do it manually */
@@ -1708,7 +1708,7 @@ emulate_:
         mov h, b                ; b is 0
         dad d
         mvi b, 3
-;       
+;
 ;_ld_complete:   /* load */
 .ld_complete:
 ;                if ( address >= 0xd010 && address <= 0xd012 )
