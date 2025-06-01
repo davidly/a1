@@ -1,4 +1,4 @@
-; n.b. This file was originally m6502.c by Aztec C v1.06.
+; n.b. This file was originally generated from m6502.c by Aztec C v1.06.
 ; Then it had many hand-edit optimizations (mostly deletes).
 ; It can't be recreated with a compiler without losing edits.
 ; Uncomment debugging lines to get instruction tracing printed to stdout.
