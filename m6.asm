@@ -979,8 +979,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ;            }
 ; case 0x05: case 0x25: case 0x45: case 0x65: case 0xc5: case 0xe5: /* ora/and/eor/adc/cmp/sbc a8 */
@@ -999,8 +998,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ;            }
 ; case 0x09: case 0x29: case 0x49: case 0x69: case 0xc9: case 0xe9: /* ora/and/eor/adc/cmp/sbc #d8 */
@@ -1015,8 +1013,7 @@ emulate_:
         mov b, e
         call op_math_
 ;                break;
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ;            }
 ; case 0x0d: case 0x2d: case 0x4d: case 0x6d: case 0xcd: case 0xed: /* ora/and/eor/adc/cmp/sbc a16 */
@@ -1034,8 +1031,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
-        mvi c, 3
-        mvi b, 0
+        lxi b, 3
         jmp .next_pc
 ;            }
 ; case 0x11: case 0x31: case 0x51: case 0x71: case 0xd1: case 0xf1: /* ora/and/eor/adc/cmp/sbc (a8), y */
@@ -1062,8 +1058,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ;            }
 ; case 0x15: case 0x35: case 0x55: case 0x75: case 0xd5: case 0xf5: /* ora/and/eor/adc/cmp/sbc a8, x */
@@ -1083,8 +1078,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ;            }
 ; case 0x19: case 0x39: case 0x59: case 0x79: case 0xd9: case 0xf9: /* ora/and/eor/adc/cmp/sbc a16, y */
@@ -1104,8 +1098,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
-        mvi c, 3
-        mvi b, 0
+        lxi b, 3
         jmp .next_pc
 ;            }
 ; case 0x1d: case 0x3d: case 0x5d: case 0x7d: case 0xdd: case 0xfd:
@@ -1126,8 +1119,7 @@ emulate_:
         mov b, m
         call op_math_
 ;                break;
-        mvi c, 3
-        mvi b, 0
+        lxi b, 3
         jmp .next_pc
 ;            }
 ; case 0x06: case 0x26: case 0x46: case 0x66: { address = get_byte( cpu.pc + 1 ); goto _rot_complete; }
@@ -1441,8 +1433,7 @@ emulate_:
         mov b, a
         call op_brotate
         sta .cpu.a
-        mvi c, 1
-        mvi b, 0
+        lxi b, 1
         jmp .next_pc
 ; case 0x6c: { cpu.pc = get_word( get_word( cpu.pc + 1 ) ); continue; } /* jmp (a16) */
 .188:
@@ -1833,8 +1824,7 @@ emulate_:
         mov b, e
         lda .cpu.y
         call op_bcmp_
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ; case 0xc4: { op_cmp( cpu.y, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpy a8 */
 .245:
@@ -1844,8 +1834,7 @@ emulate_:
         mov b, m
         lda .cpu.y
         call op_bcmp_
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ; case 0xc6 : case 0xe6: { address = get_byte( cpu.pc + 1 ); goto _crement_complete; } /* inc/dec a8 */
 .246:
@@ -1929,8 +1918,7 @@ emulate_:
         mov b, m
         lda .cpu.y
         call op_bcmp_
-        mvi c, 3
-        mvi b, 0
+        lxi b, 3
         jmp .next_pc
 ; case 0xd8: { cpu.fDecimal = false; break; } /* cld */
 .260:
@@ -1943,8 +1931,7 @@ emulate_:
         mov b, e
         lda .cpu.x
         call op_bcmp_
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ; case 0xe4: { op_cmp( cpu.x, get_byte( get_byte( cpu.pc + 1 ) ) ); break; } /* cpx a8 */
 .262:
@@ -1954,8 +1941,7 @@ emulate_:
         mov b, m
         lda .cpu.x
         call op_bcmp_
-        mvi c, 2
-        mvi b, 0
+        lxi b, 2
         jmp .next_pc
 ; case 0xe8: { cpu.x++; set_nz( cpu.x ); break; } /* inx */
 .263:
@@ -1978,8 +1964,7 @@ emulate_:
         mov b, m
         lda .cpu.x
         call op_bcmp_
-        mvi c, 3
-        mvi b, 0
+        lxi b, 3
         jmp .next_pc
 ; case 0xf8: { cpu.fDecimal = true; break; } /* sed */
 .266:
